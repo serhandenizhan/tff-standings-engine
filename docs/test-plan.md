@@ -1,6 +1,7 @@
 # Test Plan — TFF Standings Engine
 
-> Version 1.1 — 2026-11-12 (section 6 rewritten for the data-driven generator and scenario library; TC-100..TC-134). Basis: `docs/requirements.md` v1.1 (FR-01..FR-15, V-01..V-08, A-01..A-04, D-01..D-03) and the TFF rule sources quoted in `CLAUDE.md` (FMT 9/1, 9/2-a, 9/2-b, 23/4, 24/1-a, FDT 33).
+> Version 1.1 — 2026-11-12 (section 6 rewritten for the data-driven generator and scenario library; TC-100..TC-134; coverage-gap tests TC-140..TC-154 added). Basis: `docs/requirements.md` v1.1 (FR-01..FR-15, V-01..V-08, A-01..A-04, D-01..D-03) and the TFF rule sources quoted in `CLAUDE.md` (FMT 9/1, 9/2-a, 9/2-b, 23/4, 24/1-a, FDT 33).
+> **Totals:** 133 test cases (TC-001..TC-099 with gaps = 83, TC-100..TC-134 = 35, TC-140..TC-154 = 15); 655 executed JUnit invocations in the full suite (parameterised/repeated cases and sub-variants such as TC-084a..f count separately). Results: see section 7, "Execution summary".
 > All expected results in this plan were derived **by hand from the requirements and the TFF rules**, not from the implementation (black-box). The source code was consulted only for public class / method names.
 
 **Notation used in all test data**
@@ -275,202 +276,212 @@ In all F1–F5: forfeiter gets a loss, 0 points and `hasForfeitLoss() = true`; a
 
 ### Group A — generator correctness (`SeasonGeneratorTest`, `StrengthModelTest`)
 
-| TC | Property | Basis |
-|---|---|---|
-| TC-111 | Same seed (and rounds) → identical season (teams, matches, deductions, description); the generated season passes calculator validation (no V-xx exception, 18 rows). Also: `null` strength model rejected; team names equal the strength-model clubs | generator contract (seed ⇒ same season), FR-03 |
-| TC-112 | Different seeds (1..40) → pairwise different match lists | the seed must really drive the draw |
-| TC-113 | `generate(34)`: 18 teams, 306 matches, 9 per round, every ordered pair exactly once, no team twice in a round, round r+17 = round r with home/away swapped | FR-03, SLS Art. 3, generator.md "Schedule" |
-| TC-114 | `generate(k)` = first `9k` matches of `generate(34)` (same seed); its deductions are a subset of the full season's | generator.md "mid-season table = first k rounds" |
-| TC-115 | BVA invalid round count: 0, 35, −1, 36, `Integer.MIN/MAX` → `IllegalArgumentException` | valid range 1..34 |
-| TC-116 | BVA valid round count: 1, 2, 33, 34 → `9·k` matches | valid range 1..34 |
-| TC-117 | Over 200 seasons: forfeit share of matches in (0.5 %, 1.5 %), deductions per club-season in (1 %, 3 %), share of seasons with ≥ 1 deduction in (15 %, 45 %), at least one forfeit, every deduction = 3 points (rare but present) | documented probabilities 1 % / 2 % / 3 points |
-| TC-118 | Poisson sampler: 200 000 draws, fixed seed — mean = λ ± 0.02, variance = λ ± (0.03λ + 0.02) for λ = 0.5, 1.4, 3.0; λ ≤ 0 rejected (TC-118b) | Poisson mean = variance = λ |
-| TC-119 | Home goal share over 60 full seasons in (53 %, 57 %) | H = 1.10 ⇒ ≈ 55 % (generator.md) |
-| TC-120 | `StrengthModel`: 18 clubs, unique, in the order of the club file | SLS Art. 3 |
-| TC-121 | Promoted average used for exactly the clubs without any window season (Amed SFK, Çorum FK) and for no other club; attack/defence equal the test-computed promoted average from the CSV (≈ 1.22 / 1.45 as documented) | generator.md "Strength" |
-| TC-122 | μ = Σ goals for / Σ played over all CSV rows, computed independently in the test (≈ 1.407) | generator.md |
-| TC-123 | For every club with window seasons: attack = ΣGF/Σplayed, defence = ΣGA/Σplayed (pooled, match-weighted), season count; unknown club rejected (123b); empty/invalid sources rejected (123c) | generator.md "Strength" |
+| TC | Property | Basis | Actual |
+|---|---|---|---|
+| TC-111 | Same seed (and rounds) → identical season (teams, matches, deductions, description); the generated season passes calculator validation (no V-xx exception, 18 rows). Also: `null` strength model rejected; team names equal the strength-model clubs | generator contract (seed ⇒ same season), FR-03 | Pass (run-03) |
+| TC-112 | Different seeds (1..40) → pairwise different match lists | the seed must really drive the draw | Pass (run-03) |
+| TC-113 | `generate(34)`: 18 teams, 306 matches, 9 per round, every ordered pair exactly once, no team twice in a round, round r+17 = round r with home/away swapped | FR-03, SLS Art. 3, generator.md "Schedule" | Pass (run-03) |
+| TC-114 | `generate(k)` = first `9k` matches of `generate(34)` (same seed); its deductions are a subset of the full season's | generator.md "mid-season table = first k rounds" | Pass (run-03) |
+| TC-115 | BVA invalid round count: 0, 35, −1, 36, `Integer.MIN/MAX` → `IllegalArgumentException` | valid range 1..34 | Pass (run-03) |
+| TC-116 | BVA valid round count: 1, 2, 33, 34 → `9·k` matches | valid range 1..34 | Pass (run-03) |
+| TC-117 | Over 200 seasons: forfeit share of matches in (0.5 %, 1.5 %), deductions per club-season in (1 %, 3 %), share of seasons with ≥ 1 deduction in (15 %, 45 %), at least one forfeit, every deduction = 3 points (rare but present) | documented probabilities 1 % / 2 % / 3 points | Pass (run-03) |
+| TC-118 | Poisson sampler: 200 000 draws, fixed seed — mean = λ ± 0.02, variance = λ ± (0.03λ + 0.02) for λ = 0.5, 1.4, 3.0; λ ≤ 0 rejected (TC-118b) | Poisson mean = variance = λ | Pass (run-03) |
+| TC-119 | Home goal share over 60 full seasons in (53 %, 57 %) | H = 1.10 ⇒ ≈ 55 % (generator.md) | Pass (run-03) |
+| TC-120 | `StrengthModel`: 18 clubs, unique, in the order of the club file | SLS Art. 3 | Pass (run-03) |
+| TC-121 | Promoted average used for exactly the clubs without any window season (Amed SFK, Çorum FK) and for no other club; attack/defence equal the test-computed promoted average from the CSV (≈ 1.22 / 1.45 as documented) | generator.md "Strength" | Pass (run-03) |
+| TC-122 | μ = Σ goals for / Σ played over all CSV rows, computed independently in the test (≈ 1.407) | generator.md | Pass (run-03) |
+| TC-123 | For every club with window seasons: attack = ΣGF/Σplayed, defence = ΣGA/Σplayed (pooled, match-weighted), season count; unknown club rejected (123b); empty/invalid sources rejected (123c) | generator.md "Strength" | Pass (run-03) |
 
 ### Group B — scenario library (`ScenarioLibraryTest`)
 
-| TC | Property | Basis |
-|---|---|---|
-| TC-124 | `ids()` = S01..S12 in order | catalogue |
-| TC-125 | Every scenario loads, has 18 teams and `9·rounds` matches (catalogue), and passes calculator validation | library contract |
-| TC-126 | Every library scenario equals `new SeasonGenerator(seed).generate(rounds)` with the catalogue seed/rounds (documented deterministic build; also detects stale library files after a generator change) | generator.md "Scenario library" |
-| TC-127 | `pickRandomId(seed)`: deterministic, always a valid id, all 12 ids reachable over 2000 seeds | CLI `random` contract |
-| TC-128 | Unknown id (`S99`, `S00`, `S13`, empty, `s01`, `S1`, leading space, `null`) rejected by `load` and `entry` | negative |
+| TC | Property | Basis | Actual |
+|---|---|---|---|
+| TC-124 | `ids()` = S01..S12 in order | catalogue | Pass (run-03) |
+| TC-125 | Every scenario loads, has 18 teams and `9·rounds` matches (catalogue), and passes calculator validation | library contract | Pass (run-03) |
+| TC-126 | Every library scenario equals `new SeasonGenerator(seed).generate(rounds)` with the catalogue seed/rounds (documented deterministic build; also detects stale library files after a generator change) | generator.md "Scenario library" | Pass (run-03) |
+| TC-127 | `pickRandomId(seed)`: deterministic, always a valid id, all 12 ids reachable over 2000 seeds | CLI `random` contract | Pass (run-03) |
+| TC-128 | Unknown id (`S99`, `S00`, `S13`, empty, `s01`, `S1`, leading space, `null`) rejected by `load` and `entry` | negative | Pass (run-03) |
 
 ### Group C — invariants over all 12 library scenarios + 50 random seasons (`PropertyBasedStandingsTest`)
 
-| TC | Property | Basis |
-|---|---|---|
-| TC-100 | Conservation: Σ won = Σ lost; Σ drawn even; Σ GF = Σ GA (after forfeit adjustment); Σ played = 2 · matches | every match: one W + one L or two D; goals counted once each side |
-| TC-101 | Per row: played = W + D + L; GD = GF − GA; points = 3W + D − deducted; and every value equals the test-side oracle recomputed from the raw match list and deductions (FMT 23/4 applied in the test) | FR-04..FR-07, A-01, FMT 23/4 |
-| TC-102 | Positions are exactly 1..n in list order; points non-increasing down the table | FR-08, FR-13 |
-| TC-103 | Unresolved teams come in groups (consecutive rows, equal points) of ≥ 2; a team whose points total is unique is never unresolved | FR-12 |
+| TC | Property | Basis | Actual |
+|---|---|---|---|
+| TC-100 | Conservation: Σ won = Σ lost; Σ drawn even; Σ GF = Σ GA (after forfeit adjustment); Σ played = 2 · matches | every match: one W + one L or two D; goals counted once each side | Pass (run-03) |
+| TC-101 | Per row: played = W + D + L; GD = GF − GA; points = 3W + D − deducted; and every value equals the test-side oracle recomputed from the raw match list and deductions (FMT 23/4 applied in the test) | FR-04..FR-07, A-01, FMT 23/4 | Pass (run-03) |
+| TC-102 | Positions are exactly 1..n in list order; points non-increasing down the table | FR-08, FR-13 | Pass (run-03) |
+| TC-103 | Unresolved teams come in groups (consecutive rows, equal points) of ≥ 2; a team whose points total is unique is never unresolved | FR-12 | Pass (run-03) |
 
 ### Group D — metamorphic relations (`MetamorphicStandingsTest`; 12 library scenarios + random seeds 1..20, TC-129 on full seasons only)
 
-| TC | Relation | Basis |
-|---|---|---|
-| TC-104 | Shuffle: random permutation of team list, match list and deduction list → identical sequence of (position, team, unresolved) | ranking must not depend on input order |
-| TC-105 | Consistent renaming: every team gets prefix `"X "` → same points/flags per position; resolved teams in the same positions; unresolved groups contain the renamed same teams (compared as sets) | names only matter for D-02 display |
-| TC-106 | Mirroring: swap home/away and goals of every match, HOME↔AWAY forfeit → identical sequence | FR-09 II: no criterion depends on venue |
-| TC-107 | Add a deduction `(T,d)`, d = 1..5 → T's points drop by exactly d; all other points and all P/W/D/L/GF/GA unchanged. The relative order of *other* teams is deliberately **not** asserted (a new 3-team tie created by the deduction can legally reorder them — FMT 9/2-b is not monotonic) | FR-07, A-02 |
-| TC-129 | Remove all 9 matches of one round from a full season → every team's played count drops by exactly 1 | each team plays once per round |
+| TC | Relation | Basis | Actual |
+|---|---|---|---|
+| TC-104 | Shuffle: random permutation of team list, match list and deduction list → identical sequence of (position, team, unresolved) | ranking must not depend on input order | Pass (run-03) |
+| TC-105 | Consistent renaming: every team gets prefix `"X "` → same points/flags per position; resolved teams in the same positions; unresolved groups contain the renamed same teams (compared as sets) | names only matter for D-02 display | Pass (run-03) |
+| TC-106 | Mirroring: swap home/away and goals of every match, HOME↔AWAY forfeit → identical sequence | FR-09 II: no criterion depends on venue | Pass (run-03) |
+| TC-107 | Add a deduction `(T,d)`, d = 1..5 → T's points drop by exactly d; all other points and all P/W/D/L/GF/GA unchanged. The relative order of *other* teams is deliberately **not** asserted (a new 3-team tie created by the deduction can legally reorder them — FMT 9/2-b is not monotonic) | FR-07, A-02 | Pass (run-03) |
+| TC-129 | Remove all 9 matches of one round from a full season → every team's played count drops by exactly 1 | each team plays once per round | Pass (run-03) |
 
 ### Group E — catalogue flags vs calculator (`CatalogueFlagsTest`)
 
-| TC | Property | Basis |
-|---|---|---|
-| TC-108 | Every scenario flagged LIKELY_UNRESOLVED (S04, S06, S08, S11): the calculator marks ≥ 2 rows unresolved (the independent classifier is conservative: every group it flags the calculator must flag too) | generator.md "Independent classifier", FR-12 |
-| TC-109 | Every scenario flagged NO_TIE (S01): no two clubs share points, none unresolved | FR-08, FR-12 |
-| TC-110 | For all 12 scenarios the flags TIE_2 / TIE_3PLUS / FORFEIT / DEDUCTION / NO_TIE equal what the calculator's points groups and the data show (two-way); match count = 9·rounds | catalogue correctness |
+| TC | Property | Basis | Actual |
+|---|---|---|---|
+| TC-108 | Every scenario flagged LIKELY_UNRESOLVED (S04, S06, S08, S11): the calculator marks ≥ 2 rows unresolved (the independent classifier is conservative: every group it flags the calculator must flag too) | generator.md "Independent classifier", FR-12 | Pass (run-03) |
+| TC-109 | Every scenario flagged NO_TIE (S01): no two clubs share points, none unresolved | FR-08, FR-12 | Pass (run-03) |
+| TC-110 | For all 12 scenarios the flags TIE_2 / TIE_3PLUS / FORFEIT / DEDUCTION / NO_TIE equal what the calculator's points groups and the data show (two-way); match count = 9·rounds | catalogue correctness | Pass (run-03) |
 
 ### Group F — CLI scenarios (`cli/MainScenarioTest`)
 
-| TC | Input | Expected | Basis |
-|---|---|---|---|
-| TC-130 | `--scenario S01` (130b: `S04`) | exit 0, stderr empty, header line `Scenario S01…`, 18 table rows (S04: also the unresolved legend) | FR-15, D-03 |
-| TC-131 | `--scenario random 42` twice | exit 0, identical output; header names `pickRandomId(42)` and "picked with seed 42"; 18 rows | seeded determinism |
-| TC-132 | `--scenario S99` (also `s01`, `S00`) | exit 1, message naming the id on stderr, no table | negative |
-| TC-133 | `--scenario S01 5` | exit 2, usage on stderr, no table (seed only with `random`) | negative, usage |
-| TC-134 | `--scenario`; `--scenario random abc`; `--scenario random 42 7` | exit 2, usage message, no table | negative, BVA on argument count |
+| TC | Input | Expected | Basis | Actual |
+|---|---|---|---|---|
+| TC-130 | `--scenario S01` (130b: `S04`) | exit 0, stderr empty, header line `Scenario S01…`, 18 table rows (S04: also the unresolved legend) | FR-15, D-03 | Pass (run-03) |
+| TC-131 | `--scenario random 42` twice | exit 0, identical output; header names `pickRandomId(42)` and "picked with seed 42"; 18 rows | seeded determinism | Pass (run-03) |
+| TC-132 | `--scenario S99` (also `s01`, `S00`) | exit 1, message naming the id on stderr, no table | negative | Pass (run-03) |
+| TC-133 | `--scenario S01 5` | exit 2, usage on stderr, no table (seed only with `random`) | negative, usage | Pass (run-03) |
+| TC-134 | `--scenario`; `--scenario random abc`; `--scenario random 42 7` | exit 2, usage message, no table | negative, BVA on argument count | Pass (run-03) |
 
 ---
 
 ## 7. Concrete test cases
 
-Columns: **Tech** = EP (equivalence partition), BVA, DT (decision table rule), NEG (negative), MR/PBT (metamorphic / property). Actual = filled after execution.
+Columns: **Tech** = EP (equivalence partition), BVA, DT (decision table rule), NEG (negative), MR/PBT (metamorphic / property). Actual = observed result of the recorded runs (see below). TC-100..TC-134 are specified in section 6 and TC-140..TC-154 in 7.11; their Actual column is in those tables.
+
+### Execution summary
+
+| Run | Scope | Invocations | Result | Evidence |
+|---|---|---|---|---|
+| run-01 (initial) | TC-001..TC-099 | 125 | 122 pass, 3 fail (TC-078, TC-079 failures; TC-087 error) → DEF-001, DEF-002 | [`docs/results/run-01-initial/`](results/run-01-initial/) |
+| run-02 (after fixes) | TC-001..TC-099 | 125 | 125/125 pass | [`docs/results/run-02-after-fixes/`](results/run-02-after-fixes/) |
+| run-03 (full suite) | TC-001..TC-154 | 655 | 655/655 pass, 0 failures, 0 errors | [`docs/results/run-03-full-suite/`](results/run-03-full-suite/) |
+
+Actual notation: `Pass (run-01)` = passed in the first run; the three defect cases show the wrong output of run-01 and the defect ID (details in [`defect-log.md`](defect-log.md)); `Pass (run-03)` = TC-100 and above, first executed in the full-suite run. Rows TC-001..TC-099 also pass in run-02 and run-03. No TC in the plan is without an implemented test.
 
 ### 7.1 Model — `model/TeamTest`, `model/MatchResultTest`, `model/PointDeductionTest`
 
 | ID | Tech | Req | Input | Expected | Rationale | Actual |
 |---|---|---|---|---|---|---|
-| TC-001 | EP, BVA | FR-01, EP-01..03 | `Team("X")`, `Team("Sivasspor")`, `Team("Beşiktaş")`, `Team("Çaykur Rizespor")`, `Team("İstanbul Başakşehir")` | created; `name()` equals input exactly | valid partitions incl. Turkish letters, internal space, 1-char boundary | — |
-| TC-002 | NEG, BVA | V-01, V-02 | `Team(null)`, `Team("")`, `Team(" ")`, `Team("\t")` | exception with message | blank check must happen after trim (length 0 after trim) | — |
-| TC-003 | EP | D-01 | `Team(" Beşiktaş ")` vs `Team("Beşiktaş")`; `Team("beşiktaş")` vs `Team("Beşiktaş")` | first pair denotes the same team (equal, name `Beşiktaş`); second pair different | D-01 "exact match after trimming": trimmed, case-sensitive (assumption on *where* trimming happens, Q6) | — |
-| TC-004 | EP, BVA | FR-02, FR-06 | `MatchResult(A,B,0,0)`; `MatchResult(A,B,0,0,HOME)`; `…AWAY` | created; 4-arg constructor gives `forfeit() == NONE` | 0 is valid lower bound; default forfeit | — |
-| TC-005 | NEG, BVA | V-05 | `(A,B,-1,0)`, `(A,B,0,-1)` | exception | −1 is the first invalid value on both sides | — |
-| TC-006 | NEG | V-04, D-01 | `MatchResult(A,A,1,0)`; `MatchResult(Team("A"),Team(" A "),1,0)` | exception | same team, also when only whitespace differs | — |
-| TC-007 | NEG | V-01 | null home; null away; forfeit `null` | null home / null away → exception; forfeit `null` → accepted as NONE (Q3) | null checks per field | — |
-| TC-008 | BVA, NEG | V-07 | `PointDeduction(A,1)`, `(A,0)`, `(A,-1)` | 1 accepted; 0 and −1 rejected | boundary of "zero or negative" | — |
-| TC-009 | NEG | V-01 | `PointDeduction(null,3)` | exception | null team | — |
+| TC-001 | EP, BVA | FR-01, EP-01..03 | `Team("X")`, `Team("Sivasspor")`, `Team("Beşiktaş")`, `Team("Çaykur Rizespor")`, `Team("İstanbul Başakşehir")` | created; `name()` equals input exactly | valid partitions incl. Turkish letters, internal space, 1-char boundary | Pass (run-01) |
+| TC-002 | NEG, BVA | V-01, V-02 | `Team(null)`, `Team("")`, `Team(" ")`, `Team("\t")` | exception with message | blank check must happen after trim (length 0 after trim) | Pass (run-01) |
+| TC-003 | EP | D-01 | `Team(" Beşiktaş ")` vs `Team("Beşiktaş")`; `Team("beşiktaş")` vs `Team("Beşiktaş")` | first pair denotes the same team (equal, name `Beşiktaş`); second pair different | D-01 "exact match after trimming": trimmed, case-sensitive (assumption on *where* trimming happens, Q6) | Pass (run-01) |
+| TC-004 | EP, BVA | FR-02, FR-06 | `MatchResult(A,B,0,0)`; `MatchResult(A,B,0,0,HOME)`; `…AWAY` | created; 4-arg constructor gives `forfeit() == NONE` | 0 is valid lower bound; default forfeit | Pass (run-01) |
+| TC-005 | NEG, BVA | V-05 | `(A,B,-1,0)`, `(A,B,0,-1)` | exception | −1 is the first invalid value on both sides | Pass (run-01) |
+| TC-006 | NEG | V-04, D-01 | `MatchResult(A,A,1,0)`; `MatchResult(Team("A"),Team(" A "),1,0)` | exception | same team, also when only whitespace differs | Pass (run-01) |
+| TC-007 | NEG | V-01 | null home; null away; forfeit `null` | null home / null away → exception; forfeit `null` → accepted as NONE (Q3) | null checks per field | Pass (run-01) |
+| TC-008 | BVA, NEG | V-07 | `PointDeduction(A,1)`, `(A,0)`, `(A,-1)` | 1 accepted; 0 and −1 rejected | boundary of "zero or negative" | Pass (run-01) |
+| TC-009 | NEG | V-01 | `PointDeduction(null,3)` | exception | null team | Pass (run-01) |
 
 ### 7.2 Stats and points — `StandingsCalculatorTest` (`@Nested Stats`)
 
 | ID | Tech | Req | Input | Expected | Rationale | Actual |
 |---|---|---|---|---|---|---|
-| TC-010 | EP | FR-04, FR-05, FR-13 | (a) `A–B 2-1`; (b) `A–B 0-3` | (a) 1 A P1 W1 D0 L0 GF2 GA1 GD+1 3 pts; 2 B P1 L1 GF1 GA2 GD−1 0. (b) 1 B W1 GF3 GA0 3; 2 A L1 GF0 GA3 GD−3 0 | win/loss, home vs away not confused | — |
-| TC-011 | EP, BVA | FR-04, FR-12 | (a) `A–B 1-1`; (b) `A–B 0-0`; teams `[B, A]` | both P1 D1 1 pt; GF=GA=1 (a) / 0 (b); h2h, GD, GF, forfeit all equal → 1 A U, 2 B U | draw = 1 pt each; 0-0 lower bound; a single draw already produces an unresolved pair | — |
-| TC-012 | EP | FR-04, FR-05, FR-08 | `A–B 2-0, B–A 1-1, A–C 0-1, C–A 2-2, B–C 3-1, C–B 0-1` | 1 B P4 W2 D1 L1 GF5 GA4 GD+1 **7**; 2 A P4 W1 D2 L1 GF5 GA4 GD+1 **5**; 3 C P4 W1 D1 L2 GF4 GA6 GD−2 **4** | full double round-robin, no tie; order not alphabetical. Check: ΣGF 14 = ΣGA 14 | — |
-| TC-013 | EP | FR-05, A-03, A-04 | teams `[A,B,C]`; `A–B 1-0` | 1 A 3; 2 **C** P0 all zeros 0 pts GD 0; 3 B 0 pts GD −1 | team without matches is listed; B/C never met → h2h equal → GD 0 > −1 | — |
-| TC-014 | BVA | FR-08 | `A–X 1-0, A–Y 0-0, B–X 5-0, Y–B 3-0` | 1 Y 4 (GD+3); 2 A 4 (GD+1); 3 B 3 (GD+2); 4 X 0. (A/Y: h2h 0-0 equal → overall GD 3>1) | 1-point difference beats better GD (B GD +2 > A +1) | — |
-| TC-015 | EP | FR-12, A-03, D-02 | teams `[B, A]`, no matches | 1 A 0 U; 2 B 0 U | start of season: all criteria equal (ambiguity Q12) | — |
-| TC-016 | EP | FR-01 | teams `[]`, matches `[]`, deductions `[]` | empty list, no exception | assumption (Q4) | — |
+| TC-010 | EP | FR-04, FR-05, FR-13 | (a) `A–B 2-1`; (b) `A–B 0-3` | (a) 1 A P1 W1 D0 L0 GF2 GA1 GD+1 3 pts; 2 B P1 L1 GF1 GA2 GD−1 0. (b) 1 B W1 GF3 GA0 3; 2 A L1 GF0 GA3 GD−3 0 | win/loss, home vs away not confused | Pass (run-01) |
+| TC-011 | EP, BVA | FR-04, FR-12 | (a) `A–B 1-1`; (b) `A–B 0-0`; teams `[B, A]` | both P1 D1 1 pt; GF=GA=1 (a) / 0 (b); h2h, GD, GF, forfeit all equal → 1 A U, 2 B U | draw = 1 pt each; 0-0 lower bound; a single draw already produces an unresolved pair | Pass (run-01) |
+| TC-012 | EP | FR-04, FR-05, FR-08 | `A–B 2-0, B–A 1-1, A–C 0-1, C–A 2-2, B–C 3-1, C–B 0-1` | 1 B P4 W2 D1 L1 GF5 GA4 GD+1 **7**; 2 A P4 W1 D2 L1 GF5 GA4 GD+1 **5**; 3 C P4 W1 D1 L2 GF4 GA6 GD−2 **4** | full double round-robin, no tie; order not alphabetical. Check: ΣGF 14 = ΣGA 14 | Pass (run-01) |
+| TC-013 | EP | FR-05, A-03, A-04 | teams `[A,B,C]`; `A–B 1-0` | 1 A 3; 2 **C** P0 all zeros 0 pts GD 0; 3 B 0 pts GD −1 | team without matches is listed; B/C never met → h2h equal → GD 0 > −1 | Pass (run-01) |
+| TC-014 | BVA | FR-08 | `A–X 1-0, A–Y 0-0, B–X 5-0, Y–B 3-0` | 1 Y 4 (GD+3); 2 A 4 (GD+1); 3 B 3 (GD+2); 4 X 0. (A/Y: h2h 0-0 equal → overall GD 3>1) | 1-point difference beats better GD (B GD +2 > A +1) | Pass (run-01) |
+| TC-015 | EP | FR-12, A-03, D-02 | teams `[B, A]`, no matches | 1 A 0 U; 2 B 0 U | start of season: all criteria equal (ambiguity Q12) | Pass (run-01) |
+| TC-016 | EP | FR-01 | teams `[]`, matches `[]`, deductions `[]` | empty list, no exception | assumption (Q4) | Pass (run-01) |
 
 ### 7.3 Forfeit — `StandingsCalculatorTest` (`@Nested Forfeit`)
 
 | ID | Tech | Req | Input | Expected | Rationale | Actual |
 |---|---|---|---|---|---|---|
-| TC-020 | BVA, DT F3/F4 | FR-06 | `A–B g-x F=AWAY` for (2-1), (3-1), (4-1), (5-2) | A GF = 3, 3, 4, 5; GA 0; W, 3 pts. B GF 0, GA = 3,3,4,5; L, 0 pts, `hasForfeitLoss` true | max(3,g) boundary at 3/4; FMT example 5-2 → 5-0 | — |
-| TC-021 | BVA, DT F1/F2 | FR-06 | `A–B` F=HOME: (1-2), (2-5), (0-0) | adjusted 0-3, 0-5, 0-3; B W 3 pts; A L 0 pts, forfeit loss; A GF 0 | mirror side; 0-0 recorded | — |
-| TC-022 | DT F5 | FR-06 | (a) `A–B 5-2 F=HOME`; (b) `A–B 2-2 F=AWAY` | (a) 0-3: B W, A L (A's 5 goals void). (b) 3-0: A W | forfeiter was leading / level on the pitch | — |
-| TC-023 | EP | FR-06, FR-07 | `A–B 1-0 F=AWAY`, no deductions | B points 0, `getDeductedPoints()` 0 | no automatic FMT 24/1-a deduction (assumption, Q1) | — |
-| TC-024 | DT | FR-06, FR-09 | `A–B 2-1 F=HOME, A–X 5-0, X–A 1-0, B–X 0-4, X–B 4-0` | A: 0-3 L, W, L → 3 pts GF5 GA4 GD+1, forfeit loss. B: W 3-0, L, L → 3 pts GF3 GA8 GD−5. X: 3+6 = 9. Table: 1 X 9; 2 **B** 3 (h2h 3-0 pts); 3 A 3 | adjusted score must be used in h2h. Raw h2h (2-1) → A; overall GD → A; only correct impl gives B | — |
+| TC-020 | BVA, DT F3/F4 | FR-06 | `A–B g-x F=AWAY` for (2-1), (3-1), (4-1), (5-2) | A GF = 3, 3, 4, 5; GA 0; W, 3 pts. B GF 0, GA = 3,3,4,5; L, 0 pts, `hasForfeitLoss` true | max(3,g) boundary at 3/4; FMT example 5-2 → 5-0 | Pass (run-01) |
+| TC-021 | BVA, DT F1/F2 | FR-06 | `A–B` F=HOME: (1-2), (2-5), (0-0) | adjusted 0-3, 0-5, 0-3; B W 3 pts; A L 0 pts, forfeit loss; A GF 0 | mirror side; 0-0 recorded | Pass (run-01) |
+| TC-022 | DT F5 | FR-06 | (a) `A–B 5-2 F=HOME`; (b) `A–B 2-2 F=AWAY` | (a) 0-3: B W, A L (A's 5 goals void). (b) 3-0: A W | forfeiter was leading / level on the pitch | Pass (run-01) |
+| TC-023 | EP | FR-06, FR-07 | `A–B 1-0 F=AWAY`, no deductions | B points 0, `getDeductedPoints()` 0 | no automatic FMT 24/1-a deduction (assumption, Q1) | Pass (run-01) |
+| TC-024 | DT | FR-06, FR-09 | `A–B 2-1 F=HOME, A–X 5-0, X–A 1-0, B–X 0-4, X–B 4-0` | A: 0-3 L, W, L → 3 pts GF5 GA4 GD+1, forfeit loss. B: W 3-0, L, L → 3 pts GF3 GA8 GD−5. X: 3+6 = 9. Table: 1 X 9; 2 **B** 3 (h2h 3-0 pts); 3 A 3 | adjusted score must be used in h2h. Raw h2h (2-1) → A; overall GD → A; only correct impl gives B | Pass (run-01) |
 
 ### 7.4 Deductions — `StandingsCalculatorTest` (`@Nested Deductions`)
 
 | ID | Tech | Req | Input | Expected | Rationale | Actual |
 |---|---|---|---|---|---|---|
-| TC-030 | EP, BVA | FR-07 | `A–B 1-0`; (a) `(A,1)`; (b) `(A,1),(A,1)` | (a) A 2 pts, deducted 1; (b) A 1 pt, deducted 2; A still 1st, B 0 | smallest deduction; accumulation | — |
-| TC-031 | BVA, DT D4 | FR-07, FR-12 | teams `[A,B,C]`, `A–B 0-0`; (a) `(A,1)`; (b) `(A,2)` | (a) 1 B 1; A 0 and C 0: never met, GD 0=0, GF 0=0 → 2 A 0 U, 3 C 0 U. (b) 1 B 1; 2 C 0; 3 A **−1** | resulting points 0 and −1; negative total allowed and ranked below 0 (FDT 33) | — |
-| TC-032 | DT D1 | FR-07, FR-08 | `A–B 1-0, B–X 1-0`; `(A,1)` | 1 B 3; 2 A 2 (deducted 1); 3 X 0 | without deduction A would win via h2h | — |
-| TC-033 | DT D2 | FR-07, FR-09 | `B–A 1-0, A–X 2-0, X–A 0-2, X–B 1-0, B–X 0-1`; `(A,3)` | A 6−3 = 3 (GD+3); B 3 (GD−1); X 6. Table: 1 X 6; 2 **B** 3 (h2h won); 3 A 3 | deduction creates tie → tie-break; GD alone would pick A | — |
-| TC-034 | DT D3 | A-02, FR-09 | `A–B 1-0, B–A 0-0, A–X 2-0, X–A 1-0, X–B 1-0, B–X 0-1`; `(A,6)` | A 7−6 = 1, B 1, X 9. h2h from results: A 4 pts, B 1 → 1 X 9; 2 **A** 1; 3 B 1 | if deduction leaked into h2h: A 4−6 = −2 < 1 → B above A | — |
-| TC-035 | NEG | V-07 | teams `[A,B]`, deduction `(Team("Z"),3)` | exception naming Z | deduction for unregistered team | — |
+| TC-030 | EP, BVA | FR-07 | `A–B 1-0`; (a) `(A,1)`; (b) `(A,1),(A,1)` | (a) A 2 pts, deducted 1; (b) A 1 pt, deducted 2; A still 1st, B 0 | smallest deduction; accumulation | Pass (run-01) |
+| TC-031 | BVA, DT D4 | FR-07, FR-12 | teams `[A,B,C]`, `A–B 0-0`; (a) `(A,1)`; (b) `(A,2)` | (a) 1 B 1; A 0 and C 0: never met, GD 0=0, GF 0=0 → 2 A 0 U, 3 C 0 U. (b) 1 B 1; 2 C 0; 3 A **−1** | resulting points 0 and −1; negative total allowed and ranked below 0 (FDT 33) | Pass (run-01) |
+| TC-032 | DT D1 | FR-07, FR-08 | `A–B 1-0, B–X 1-0`; `(A,1)` | 1 B 3; 2 A 2 (deducted 1); 3 X 0 | without deduction A would win via h2h | Pass (run-01) |
+| TC-033 | DT D2 | FR-07, FR-09 | `B–A 1-0, A–X 2-0, X–A 0-2, X–B 1-0, B–X 0-1`; `(A,3)` | A 6−3 = 3 (GD+3); B 3 (GD−1); X 6. Table: 1 X 6; 2 **B** 3 (h2h won); 3 A 3 | deduction creates tie → tie-break; GD alone would pick A | Pass (run-01) |
+| TC-034 | DT D3 | A-02, FR-09 | `A–B 1-0, B–A 0-0, A–X 2-0, X–A 1-0, X–B 1-0, B–X 0-1`; `(A,6)` | A 7−6 = 1, B 1, X 9. h2h from results: A 4 pts, B 1 → 1 X 9; 2 **A** 1; 3 B 1 | if deduction leaked into h2h: A 4−6 = −2 < 1 → B above A | Pass (run-01) |
+| TC-035 | NEG | V-07 | teams `[A,B]`, deduction `(Team("Z"),3)` | exception naming Z | deduction for unregistered team | Pass (run-01) |
 
 ### 7.5 Validation — `StandingsCalculatorTest` (`@Nested Validation`)
 
 | ID | Tech | Req | Input | Expected | Rationale | Actual |
 |---|---|---|---|---|---|---|
-| TC-040 | NEG | V-01 | rows: teams `null`; matches `null`; teams `[A,null]`; matches `[A–B 1-0, null]`; deductions `[null]` | exception each | null lists / null elements | — |
-| TC-041 | NEG | V-01 | deductions list `null` | exception (planned; ambiguity Q2) | V-01 does not list a null deduction *list* explicitly | — |
-| TC-042 | NEG | V-02, D-01 | `[A, A]`; `[Beşiktaş, " Beşiktaş "]` | exception (duplicate) | exact and after-trim duplicates | — |
-| TC-043 | EP | FR-01, D-01 | teams `[Beşiktaş, beşiktaş]`, `Beşiktaş–beşiktaş 1-0` | accepted; Beşiktaş 3 pts, beşiktaş 0 | case-sensitive names are distinct | — |
-| TC-044 | NEG | V-03 | teams `[A,B]`; (a) `Z–A 1-0`; (b) `A–Z 1-0` | exception; message contains `Z` (assumption Q5) | home and away side both checked | — |
-| TC-045 | EP | D-01, V-03 | teams `[Beşiktaş, Göztepe]`, `Team("Beşiktaş ")–Team(" Göztepe") 2-0` | accepted; Beşiktaş 3 pts | trimmed names must resolve to registered teams | — |
-| TC-046 | NEG | V-06 | (a) `A–B 1-0, A–B 2-2`; (b) `A–B 1-0, A–B 0-0 F=HOME` | exception | same direction twice, regardless of score/forfeit | — |
-| TC-047 | BVA | FR-03 | `A–B 1-0, B–A 0-0` | accepted; A 4 pts, B 1 | 2 matches, opposite directions = maximum valid | — |
-| TC-048 | NEG, BVA | V-06 | `A–B 1-0, B–A 0-0, A–B 2-0` | exception | 3 matches = first invalid count | — |
+| TC-040 | NEG | V-01 | rows: teams `null`; matches `null`; teams `[A,null]`; matches `[A–B 1-0, null]`; deductions `[null]` | exception each | null lists / null elements | Pass (run-01) |
+| TC-041 | NEG | V-01 | deductions list `null` | exception (planned; ambiguity Q2) | V-01 does not list a null deduction *list* explicitly | Pass (run-01) |
+| TC-042 | NEG | V-02, D-01 | `[A, A]`; `[Beşiktaş, " Beşiktaş "]` | exception (duplicate) | exact and after-trim duplicates | Pass (run-01) |
+| TC-043 | EP | FR-01, D-01 | teams `[Beşiktaş, beşiktaş]`, `Beşiktaş–beşiktaş 1-0` | accepted; Beşiktaş 3 pts, beşiktaş 0 | case-sensitive names are distinct | Pass (run-01) |
+| TC-044 | NEG | V-03 | teams `[A,B]`; (a) `Z–A 1-0`; (b) `A–Z 1-0` | exception; message contains `Z` (assumption Q5) | home and away side both checked | Pass (run-01) |
+| TC-045 | EP | D-01, V-03 | teams `[Beşiktaş, Göztepe]`, `Team("Beşiktaş ")–Team(" Göztepe") 2-0` | accepted; Beşiktaş 3 pts | trimmed names must resolve to registered teams | Pass (run-01) |
+| TC-046 | NEG | V-06 | (a) `A–B 1-0, A–B 2-2`; (b) `A–B 1-0, A–B 0-0 F=HOME` | exception | same direction twice, regardless of score/forfeit | Pass (run-01) |
+| TC-047 | BVA | FR-03 | `A–B 1-0, B–A 0-0` | accepted; A 4 pts, B 1 | 2 matches, opposite directions = maximum valid | Pass (run-01) |
+| TC-048 | NEG, BVA | V-06 | `A–B 1-0, B–A 0-0, A–B 2-0` | exception | 3 matches = first invalid count | Pass (run-01) |
 
 ### 7.6 Two-team ties — `TieBreakTwoTeamTest` (FMT 9/2-a)
 
 | ID | Tech | Req | Input | Expected (with arithmetic) | Rationale (fault exposed) | Actual |
 |---|---|---|---|---|---|---|
-| TC-050 | DT R1, BVA | FR-09 I | `A–B 2-1, B–A 1-1, X–A 1-0, B–X 3-0` | A 4 pts (GD 0), B 4 (GD+2), X 3. h2h: A 3+1 = 4, B 0+1 = 1 → 1 A, 2 B, 3 X | h2h over two legs beats better overall GD | — |
-| TC-051 | DT R1, BVA | FR-09 I | `B–A 1-0, A–X 4-0` | B 3 (GD+1), A 3 (GD+3), X 0 → 1 **B**, 2 A, 3 X | single mutual match; GD would pick A | — |
-| TC-052 | DT R2 | FR-09 II | `A–B 3-0, B–A 1-0, A–X 1-0, B–X 6-0` | both 6 pts; h2h pts 3-3; h2h GD A (3+0)−(0+1) = +2, B −2 → 1 A, 2 B, 3 X. Overall GD A +3 < B +4 | h2h GD before overall GD | — |
-| TC-053 | DT R2' | FR-09 II | `A–B 2-1, B–A 1-0, A–X 2-0, B–X 1-0` | h2h pts 3-3; h2h GD A 2−2 = 0, B 0 (B scored 1 away goal, A 0). Overall GD A +2 > B +1 → 1 A, 2 B, 3 X | away goals must NOT decide (they would pick B) | — |
-| TC-054 | DT R3, BVA | FR-09 III | `A–B 1-1, A–X 4-3, B–X 2-0` | 4 pts each; h2h equal; GD A 5−4 = +1, B 3−1 = +2 → 1 **B**, 2 A, 3 X. (GF would pick A 5 > 3) | GD before GF; GD difference 1 | — |
-| TC-055 | DT R4, BVA | FR-09 IV | `A–B 1-1, A–X 1-0, B–X 2-1` | 4 pts each; GD +1 each; GF A 2, B 3 → 1 **B**, 2 A, 3 X | GF difference 1 | — |
-| TC-056 | DT R5 | FR-09 V, FR-06 | `A–B 0-0, X–A 0-0 F=AWAY, Y–B 3-0, X–Y 1-0` | X 6, Y 3; A and B 1 pt, GF0 GA3 GD−3; A has forfeit loss → 1 X, 2 Y, 3 **B**, 4 A | forfeit criterion; recorded 0-0 must become 3-0 | — |
-| TC-057 | DT | FR-09 order | `A–B 0-0, X–A 0-0 F=AWAY, A–Y 5-0, B–Y 1-0` | A 4 pts GF5 GA3 GD+2 (forfeit loss); B 4 GD+1; X 3; Y 0 → 1 A, 2 B, 3 X, 4 Y | forfeit criterion is last; must not be applied before GD | — |
-| TC-058 | DT R6 | FR-09 V, FR-12, D-02 | teams `[B, A, X]`; `A–B 0-0, X–A 0-0 F=AWAY, X–B 0-0 F=AWAY` | X 6 (GF6); A, B 1 pt, GD −3, GF 0, both forfeit loss → 1 X, 2 A U, 3 B U | both forfeited → still level → unresolved, alphabetical display | — |
-| TC-059 | DT R7 | FR-12, D-02 | teams `[B, X, A]`; `A–B 1-1, A–X 2-0, B–X 2-0` | A, B 4 pts, GF3 GA1 GD+2 → 1 A U, 2 B U, 3 X 0 (not U) | all criteria equal, no forfeit; display order ≠ input order | — |
-| TC-060 | EP, BVA | FR-09, A-03 | `A–X 1-0, X–B 0-2` | A, B never met → h2h equal; GD B +2 > A +1 → 1 **B**, 2 A, 3 X | 0 mutual matches must not crash / must skip to III | — |
-| TC-061 | EP | FR-08, FR-09 | `A–C 2-0, B–D 1-0, A–D 1-0, B–C 3-0, A–B 0-0, C–D 1-1` | A 7 (GD+3), B 7 (GD+4); C 1 (GF1 GA6 GD−5), D 1 (GF1 GA3 GD−2). Each pair h2h drawn → 1 B, 2 A, 3 D, 4 C | two independent tie groups in one table | — |
+| TC-050 | DT R1, BVA | FR-09 I | `A–B 2-1, B–A 1-1, X–A 1-0, B–X 3-0` | A 4 pts (GD 0), B 4 (GD+2), X 3. h2h: A 3+1 = 4, B 0+1 = 1 → 1 A, 2 B, 3 X | h2h over two legs beats better overall GD | Pass (run-01) |
+| TC-051 | DT R1, BVA | FR-09 I | `B–A 1-0, A–X 4-0` | B 3 (GD+1), A 3 (GD+3), X 0 → 1 **B**, 2 A, 3 X | single mutual match; GD would pick A | Pass (run-01) |
+| TC-052 | DT R2 | FR-09 II | `A–B 3-0, B–A 1-0, A–X 1-0, B–X 6-0` | both 6 pts; h2h pts 3-3; h2h GD A (3+0)−(0+1) = +2, B −2 → 1 A, 2 B, 3 X. Overall GD A +3 < B +4 | h2h GD before overall GD | Pass (run-01) |
+| TC-053 | DT R2' | FR-09 II | `A–B 2-1, B–A 1-0, A–X 2-0, B–X 1-0` | h2h pts 3-3; h2h GD A 2−2 = 0, B 0 (B scored 1 away goal, A 0). Overall GD A +2 > B +1 → 1 A, 2 B, 3 X | away goals must NOT decide (they would pick B) | Pass (run-01) |
+| TC-054 | DT R3, BVA | FR-09 III | `A–B 1-1, A–X 4-3, B–X 2-0` | 4 pts each; h2h equal; GD A 5−4 = +1, B 3−1 = +2 → 1 **B**, 2 A, 3 X. (GF would pick A 5 > 3) | GD before GF; GD difference 1 | Pass (run-01) |
+| TC-055 | DT R4, BVA | FR-09 IV | `A–B 1-1, A–X 1-0, B–X 2-1` | 4 pts each; GD +1 each; GF A 2, B 3 → 1 **B**, 2 A, 3 X | GF difference 1 | Pass (run-01) |
+| TC-056 | DT R5 | FR-09 V, FR-06 | `A–B 0-0, X–A 0-0 F=AWAY, Y–B 3-0, X–Y 1-0` | X 6, Y 3; A and B 1 pt, GF0 GA3 GD−3; A has forfeit loss → 1 X, 2 Y, 3 **B**, 4 A | forfeit criterion; recorded 0-0 must become 3-0 | Pass (run-01) |
+| TC-057 | DT | FR-09 order | `A–B 0-0, X–A 0-0 F=AWAY, A–Y 5-0, B–Y 1-0` | A 4 pts GF5 GA3 GD+2 (forfeit loss); B 4 GD+1; X 3; Y 0 → 1 A, 2 B, 3 X, 4 Y | forfeit criterion is last; must not be applied before GD | Pass (run-01) |
+| TC-058 | DT R6 | FR-09 V, FR-12, D-02 | teams `[B, A, X]`; `A–B 0-0, X–A 0-0 F=AWAY, X–B 0-0 F=AWAY` | X 6 (GF6); A, B 1 pt, GD −3, GF 0, both forfeit loss → 1 X, 2 A U, 3 B U | both forfeited → still level → unresolved, alphabetical display | Pass (run-01) |
+| TC-059 | DT R7 | FR-12, D-02 | teams `[B, X, A]`; `A–B 1-1, A–X 2-0, B–X 2-0` | A, B 4 pts, GF3 GA1 GD+2 → 1 A U, 2 B U, 3 X 0 (not U) | all criteria equal, no forfeit; display order ≠ input order | Pass (run-01) |
+| TC-060 | EP, BVA | FR-09, A-03 | `A–X 1-0, X–B 0-2` | A, B never met → h2h equal; GD B +2 > A +1 → 1 **B**, 2 A, 3 X | 0 mutual matches must not crash / must skip to III | Pass (run-01) |
+| TC-061 | EP | FR-08, FR-09 | `A–C 2-0, B–D 1-0, A–D 1-0, B–C 3-0, A–B 0-0, C–D 1-1` | A 7 (GD+3), B 7 (GD+4); C 1 (GF1 GA6 GD−5), D 1 (GF1 GA3 GD−2). Each pair h2h drawn → 1 B, 2 A, 3 D, 4 C | two independent tie groups in one table | Pass (run-01) |
 
 ### 7.7 Three-or-more-team ties — `TieBreakMultiTeamTest` (FMT 9/2-b)
 
 | ID | Tech | Req | Input | Expected (with arithmetic) | Rationale (fault exposed) | Actual |
 |---|---|---|---|---|---|---|
-| TC-065 | DT M1 | FR-10 II | `C–B 1-0, C–A 1-0, B–A 1-0, C–X 0-1, X–C 1-0, B–X 1-0, X–B 1-0, A–X 3-0, X–A 0-3` | A, B, C 6 pts; X 9 (W3 L3, GF3 GA7). Mini pts C 6, B 3, A 0. A has best overall GD (+4 vs 0, 0) → 1 X, 2 C, 3 B, 4 A | mini-table ignores matches vs X; overall GD would invert | — |
-| TC-066 | DT M2 | FR-10 III | `A–B 3-0, B–C 1-0, C–A 1-0, A–X 1-0, B–X 6-0, C–X 2-0` | all 6 pts; mini pts 3 each; mini GD A +3−1 = +2, C −1+1 = 0, B −3+1 = −2. Overall GD A +3, B +4, C +2 → 1 A, 2 C, 3 B, 4 X | mini GD before overall GD | — |
-| TC-067 | DT M3 | FR-10 IV | `A–B 1-0, B–C 3-2, C–A 2-1, A–X 5-0, B–X 2-0, C–X 1-0` | all 6; mini pts 3, mini GD 0 each; mini GF A 1+1 = 2, B 0+3 = 3, C 2+2 = 4. Overall GD A +5, B +2, C +1 → 1 C, 2 B, 3 A, 4 X | mini GF before overall criteria (exact inverse of GD order) | — |
-| TC-068 | DT M4 | FR-10 V | `A–B 1-0, B–C 1-0, C–A 1-0, A–X 1-0, B–X 3-0, C–X 2-0` | mini all equal (3 pts, GD 0, GF 1); overall GD A +1, B +3, C +2 → 1 B, 2 C, 3 A, 4 X | falls through to overall GD | — |
-| TC-069 | DT M5 | FR-10 VI | `A–B 1-0, B–C 1-0, C–A 1-0, A–X 2-1, B–X 1-0, C–X 3-2` | mini equal; overall GD +1 each; GF A 3, B 2, C 4 → 1 C, 2 A, 3 B, 4 X | overall GF | — |
-| TC-070 | DT M6 | FR-10 VII, FR-11, FR-12, D-02 | teams `[C, A, X, B]`; `A–B 0-0, B–C 0-0, C–A 0-0, X–A 0-0 F=AWAY, X–B 3-0, X–C 3-0` | X 9; A, B, C 2 pts, GF0 GA3 GD−3; mini all 0-0; only A has forfeit loss → 1 X, 2 B U, 3 C U, 4 A (not U) | partial resolution; unresolved block in the middle of the table; A must not be flagged | — |
-| TC-071 | DT M7 | FR-12, D-02 | teams `[C, B, A]`; `A–B 1-0, B–C 1-0, C–A 1-0` | all 3 pts, GD 0, GF 1 → 1 A U, 2 B U, 3 C U | perfect cycle → all unresolved | — |
-| TC-072 | DT M8 | FR-10, **FR-11** | `A–B 0-0, C–A 1-0, C–B 3-0, A–X 1-0, X–A 0-1, B–X 5-0, X–B 0-3, C–X 0-0, X–C 1-0` | A 7 (GF2 GA1 GD+1), B 7 (GF8 GA3 GD+5), C 7 (GF4 GA1 GD+3), X 4. Mini pts C 6, A 1, B 1; A/B mini GD −1 vs −3 → 1 C, 2 A, 3 B, 4 X | re-applying 2-team rule to A/B (h2h 0-0 → overall GD) would give B above A | — |
-| TC-073 | DT M9 (key) | **FR-11**, FR-10 | `A–B 1-0, C–A 2-1, B–C 2-1, A–D 1-0, B–D 3-0, C–D 1-0` | A 6 (GF3 GA2 GD+1), B 6 (GF5 GA2 GD+3), C 6 (GF4 GA3 GD+1), D 0. Mini: pts 3/3/3, GD 0/0/0, GF A 2, B 2, C 3 → C first; A/B still level → overall GD B +3 > A +1 → 1 C, 2 B, 3 A, 4 D | see §4.2: recursive h2h → C, A, B; skipping mini GF → B, C, A | — |
-| TC-074 | BVA (size 2↔3) | FR-09 vs FR-10 | same as TC-073 but `C–D 1-1` | C 4 (GD 0), D 1; only A, B level at 6 → 2-team rule: h2h A won → 1 **A**, 2 B, 3 C, 4 D | one changed result switches algorithm and flips A/B | — |
-| TC-075 | EP | FR-10, A-03 | `A–B 2-0, B–C 1-0, C–X 1-0` | A, B, C 3 pts; mini (only A–B, B–C): A 3 pts GD+2, B 3 GD−1, C 0 → 1 A, 2 B, 3 C, 4 X. (overall GD would give A, C, B) | incomplete mini-table must work | — |
-| TC-076 | EP, BVA | FR-10 | `A–B 0-0, C–D 1-1, A–C 3-0, C–B 2-0, B–D 1-0, D–A 1-0` | all 4 pts (W1 D1 L1); mini = overall: GD A +2, D 0, C −1 (GF3), B −1 (GF1) → 1 A, 2 D, 3 C, 4 B | 4-team tie; procedure not hard-coded for 3 | — |
-| TC-077 | DT | FR-06, FR-10 | `A–B 1-0, B–C 0-0 F=AWAY, C–A 1-0` | B–C becomes 3-0. All 3 pts; mini GD B −1+3 = +2, A 0, C −2 → 1 B, 2 A, 3 C (C forfeit loss) | mini-table must use adjusted score (raw 0-0 → C 4, A 3, B 1) | — |
-| TC-078 | EP | D-02, FR-12 | 11 teams, no matches, input order reversed: Vanspor, Ümraniyespor, Trabzonspor, Şanlıurfaspor, Kasımpaşa, İstanbul Başakşehir, Iğdır FK, Denizlispor, Çaykur Rizespor, Beşiktaş, Ankaragücü | all 0 pts, all U, positions 1..11 in Turkish order: Ankaragücü, Beşiktaş, Çaykur Rizespor, Denizlispor, Iğdır FK, İstanbul Başakşehir, Kasımpaşa, Şanlıurfaspor, Trabzonspor, Ümraniyespor, Vanspor | Turkish alphabet A B C Ç D … I İ … S Ş T U Ü V. Unicode code-point order would put Ç, İ, Ş, Ü after Z | — |
-| TC-079 | EP | D-02 | teams `[Denizlispor, Çaykur Rizespor]`; `Denizlispor–Çaykur Rizespor 1-1` | 1 Çaykur Rizespor U, 2 Denizlispor U | minimal 2-team version of TC-078 (Ç < D) | — |
+| TC-065 | DT M1 | FR-10 II | `C–B 1-0, C–A 1-0, B–A 1-0, C–X 0-1, X–C 1-0, B–X 1-0, X–B 1-0, A–X 3-0, X–A 0-3` | A, B, C 6 pts; X 9 (W3 L3, GF3 GA7). Mini pts C 6, B 3, A 0. A has best overall GD (+4 vs 0, 0) → 1 X, 2 C, 3 B, 4 A | mini-table ignores matches vs X; overall GD would invert | Pass (run-01) |
+| TC-066 | DT M2 | FR-10 III | `A–B 3-0, B–C 1-0, C–A 1-0, A–X 1-0, B–X 6-0, C–X 2-0` | all 6 pts; mini pts 3 each; mini GD A +3−1 = +2, C −1+1 = 0, B −3+1 = −2. Overall GD A +3, B +4, C +2 → 1 A, 2 C, 3 B, 4 X | mini GD before overall GD | Pass (run-01) |
+| TC-067 | DT M3 | FR-10 IV | `A–B 1-0, B–C 3-2, C–A 2-1, A–X 5-0, B–X 2-0, C–X 1-0` | all 6; mini pts 3, mini GD 0 each; mini GF A 1+1 = 2, B 0+3 = 3, C 2+2 = 4. Overall GD A +5, B +2, C +1 → 1 C, 2 B, 3 A, 4 X | mini GF before overall criteria (exact inverse of GD order) | Pass (run-01) |
+| TC-068 | DT M4 | FR-10 V | `A–B 1-0, B–C 1-0, C–A 1-0, A–X 1-0, B–X 3-0, C–X 2-0` | mini all equal (3 pts, GD 0, GF 1); overall GD A +1, B +3, C +2 → 1 B, 2 C, 3 A, 4 X | falls through to overall GD | Pass (run-01) |
+| TC-069 | DT M5 | FR-10 VI | `A–B 1-0, B–C 1-0, C–A 1-0, A–X 2-1, B–X 1-0, C–X 3-2` | mini equal; overall GD +1 each; GF A 3, B 2, C 4 → 1 C, 2 A, 3 B, 4 X | overall GF | Pass (run-01) |
+| TC-070 | DT M6 | FR-10 VII, FR-11, FR-12, D-02 | teams `[C, A, X, B]`; `A–B 0-0, B–C 0-0, C–A 0-0, X–A 0-0 F=AWAY, X–B 3-0, X–C 3-0` | X 9; A, B, C 2 pts, GF0 GA3 GD−3; mini all 0-0; only A has forfeit loss → 1 X, 2 B U, 3 C U, 4 A (not U) | partial resolution; unresolved block in the middle of the table; A must not be flagged | Pass (run-01) |
+| TC-071 | DT M7 | FR-12, D-02 | teams `[C, B, A]`; `A–B 1-0, B–C 1-0, C–A 1-0` | all 3 pts, GD 0, GF 1 → 1 A U, 2 B U, 3 C U | perfect cycle → all unresolved | Pass (run-01) |
+| TC-072 | DT M8 | FR-10, **FR-11** | `A–B 0-0, C–A 1-0, C–B 3-0, A–X 1-0, X–A 0-1, B–X 5-0, X–B 0-3, C–X 0-0, X–C 1-0` | A 7 (GF2 GA1 GD+1), B 7 (GF8 GA3 GD+5), C 7 (GF4 GA1 GD+3), X 4. Mini pts C 6, A 1, B 1; A/B mini GD −1 vs −3 → 1 C, 2 A, 3 B, 4 X | re-applying 2-team rule to A/B (h2h 0-0 → overall GD) would give B above A | Pass (run-01) |
+| TC-073 | DT M9 (key) | **FR-11**, FR-10 | `A–B 1-0, C–A 2-1, B–C 2-1, A–D 1-0, B–D 3-0, C–D 1-0` | A 6 (GF3 GA2 GD+1), B 6 (GF5 GA2 GD+3), C 6 (GF4 GA3 GD+1), D 0. Mini: pts 3/3/3, GD 0/0/0, GF A 2, B 2, C 3 → C first; A/B still level → overall GD B +3 > A +1 → 1 C, 2 B, 3 A, 4 D | see §4.2: recursive h2h → C, A, B; skipping mini GF → B, C, A | Pass (run-01) |
+| TC-074 | BVA (size 2↔3) | FR-09 vs FR-10 | same as TC-073 but `C–D 1-1` | C 4 (GD 0), D 1; only A, B level at 6 → 2-team rule: h2h A won → 1 **A**, 2 B, 3 C, 4 D | one changed result switches algorithm and flips A/B | Pass (run-01) |
+| TC-075 | EP | FR-10, A-03 | `A–B 2-0, B–C 1-0, C–X 1-0` | A, B, C 3 pts; mini (only A–B, B–C): A 3 pts GD+2, B 3 GD−1, C 0 → 1 A, 2 B, 3 C, 4 X. (overall GD would give A, C, B) | incomplete mini-table must work | Pass (run-01) |
+| TC-076 | EP, BVA | FR-10 | `A–B 0-0, C–D 1-1, A–C 3-0, C–B 2-0, B–D 1-0, D–A 1-0` | all 4 pts (W1 D1 L1); mini = overall: GD A +2, D 0, C −1 (GF3), B −1 (GF1) → 1 A, 2 D, 3 C, 4 B | 4-team tie; procedure not hard-coded for 3 | Pass (run-01) |
+| TC-077 | DT | FR-06, FR-10 | `A–B 1-0, B–C 0-0 F=AWAY, C–A 1-0` | B–C becomes 3-0. All 3 pts; mini GD B −1+3 = +2, A 0, C −2 → 1 B, 2 A, 3 C (C forfeit loss) | mini-table must use adjusted score (raw 0-0 → C 4, A 3, B 1) | Pass (run-01) |
+| TC-078 | EP | D-02, FR-12 | 11 teams, no matches, input order reversed: Vanspor, Ümraniyespor, Trabzonspor, Şanlıurfaspor, Kasımpaşa, İstanbul Başakşehir, Iğdır FK, Denizlispor, Çaykur Rizespor, Beşiktaş, Ankaragücü | all 0 pts, all U, positions 1..11 in Turkish order: Ankaragücü, Beşiktaş, Çaykur Rizespor, Denizlispor, Iğdır FK, İstanbul Başakşehir, Kasımpaşa, Şanlıurfaspor, Trabzonspor, Ümraniyespor, Vanspor | Turkish alphabet A B C Ç D … I İ … S Ş T U Ü V. Unicode code-point order would put Ç, İ, Ş, Ü after Z | Order was Unicode code-point order: `[Ankaragücü!, Beşiktaş!, Denizlispor!, Iğdır FK!, Kasımpaşa!, Trabzonspor!, Vanspor!, Çaykur Rizespor!, Ümraniyespor!, İstanbul Başakşehir!, Şanlıurfaspor!]` (Ç, Ü, İ, Ş after Z) → DEF-001; Pass after fix (run-02) |
+| TC-079 | EP | D-02 | teams `[Denizlispor, Çaykur Rizespor]`; `Denizlispor–Çaykur Rizespor 1-1` | 1 Çaykur Rizespor U, 2 Denizlispor U | minimal 2-team version of TC-078 (Ç < D) | `[Denizlispor!, Çaykur Rizespor!]` (Ç after D) → DEF-001; Pass after fix (run-02) |
 
 ### 7.8 CSV input — `io/CsvLoaderTest` (files created in `@TempDir`, written as UTF-8)
 
 | ID | Tech | Req | Input | Expected | Rationale | Actual |
 |---|---|---|---|---|---|---|
-| TC-080 | EP | FR-14 | teams file: `Çaykur Rizespor` / `İstanbul Başakşehir` / `Şanlıurfaspor` | 3 teams, names byte-exact, file order | UTF-8 decoding (must not depend on platform charset) | — |
-| TC-081 | EP, BVA | FR-14, FR-06 | matches: `A;B;2;1` ; `A;C;1;0;NONE` ; `B;C;0;0;HOME` ; `C;A;5;2;AWAY` | 4 results; forfeit NONE, NONE, HOME, AWAY | 4 and 5 fields valid; default NONE | — |
-| TC-082 | EP | D-01, FR-14 | ` Beşiktaş ;Göztepe; 2 ;1` | Beşiktaş, Göztepe, 2, 1 | trimming of names (D-01) and numbers (assumption Q9) | — |
-| TC-083 | EP | FR-14 | file with empty line, whitespace-only line, CRLF endings | same result as clean LF file | blank lines ignored; `\r` must not stick to last field (`"1\r"` not a number, `"A\r"` ≠ `A`) | — |
-| TC-084 | NEG, BVA | V-08 | teams `A;B`; matches `A;B;1` and `A;B;1;0;NONE;X`; deductions `A` and `A;3;X` — bad line is physical line 3 after a valid line and a blank line | `InputFormatException`; message contains file name and `3` | field-count boundaries; 1-based physical line number (assumption) | — |
-| TC-085 | NEG | V-08 | goals `x`, `1.5`, empty (`A;B;;1`); deduction points `abc` | `InputFormatException` with file + line | non-integer numbers | — |
-| TC-086 | NEG | V-08 | forfeit `XYZ`; forfeit `home` | `XYZ` rejected; `home` rejected (planned, ambiguity Q9) | unknown enum value | — |
-| TC-087 | EP | FR-14 | `A;B;1;0;` | forfeit NONE (planned, ambiguity Q9) | empty optional field | — |
-| TC-088 | NEG | V-05, V-08 | `A;B;-1;0` | rejected with exception (type/line number: ambiguity Q10) | negative goals arriving through CSV | — |
-| TC-089 | EP, NEG | FR-14, V-07 | deductions `Beşiktaş;3` and `Beşiktaş;0` | first → `PointDeduction(Beşiktaş,3)`; second rejected | valid line; zero points | — |
-| TC-090 | NEG | V-08 | non-existent teams / matches / deductions path | `InputFormatException`, message contains file name | missing file | — |
+| TC-080 | EP | FR-14 | teams file: `Çaykur Rizespor` / `İstanbul Başakşehir` / `Şanlıurfaspor` | 3 teams, names byte-exact, file order | UTF-8 decoding (must not depend on platform charset) | Pass (run-01) |
+| TC-081 | EP, BVA | FR-14, FR-06 | matches: `A;B;2;1` ; `A;C;1;0;NONE` ; `B;C;0;0;HOME` ; `C;A;5;2;AWAY` | 4 results; forfeit NONE, NONE, HOME, AWAY | 4 and 5 fields valid; default NONE | Pass (run-01) |
+| TC-082 | EP | D-01, FR-14 | ` Beşiktaş ;Göztepe; 2 ;1` | Beşiktaş, Göztepe, 2, 1 | trimming of names (D-01) and numbers (assumption Q9) | Pass (run-01) |
+| TC-083 | EP | FR-14 | file with empty line, whitespace-only line, CRLF endings | same result as clean LF file | blank lines ignored; `\r` must not stick to last field (`"1\r"` not a number, `"A\r"` ≠ `A`) | Pass (run-01) |
+| TC-084 | NEG, BVA | V-08 | teams `A;B`; matches `A;B;1` and `A;B;1;0;NONE;X`; deductions `A` and `A;3;X` — bad line is physical line 3 after a valid line and a blank line | `InputFormatException`; message contains file name and `3` | field-count boundaries; 1-based physical line number (assumption) | Pass (run-01) |
+| TC-085 | NEG | V-08 | goals `x`, `1.5`, empty (`A;B;;1`); deduction points `abc` | `InputFormatException` with file + line | non-integer numbers | Pass (run-01) |
+| TC-086 | NEG | V-08 | forfeit `XYZ`; forfeit `home` | `XYZ` rejected; `home` rejected (planned, ambiguity Q9) | unknown enum value | Pass (run-01) |
+| TC-087 | EP | FR-14 | `A;B;1;0;` | forfeit NONE (planned, ambiguity Q9) | empty optional field | `InputFormatException`: `matches.csv, line 1: unknown forfeit value ''` (empty fifth field rejected instead of NONE) → DEF-002; Pass after fix (run-02) |
+| TC-088 | NEG | V-05, V-08 | `A;B;-1;0` | rejected with exception (type/line number: ambiguity Q10) | negative goals arriving through CSV | Pass (run-01) |
+| TC-089 | EP, NEG | FR-14, V-07 | deductions `Beşiktaş;3` and `Beşiktaş;0` | first → `PointDeduction(Beşiktaş,3)`; second rejected | valid line; zero points | Pass (run-01) |
+| TC-090 | NEG | V-08 | non-existent teams / matches / deductions path | `InputFormatException`, message contains file name | missing file | Pass (run-01) |
 
 ### 7.9 CLI — `cli/TableFormatterTest`, `cli/MainTest`
 
 | ID | Tech | Req | Input | Expected | Rationale | Actual |
 |---|---|---|---|---|---|---|
-| TC-091 | EP | FR-13, FR-15 | rows of TC-012 | header + 3 rows in order B, A, C with pos, P, W, D, L, GF, GA, GD, Pts | all FR-13 fields present | — |
-| TC-092 | EP | FR-15 | rows with names `A` and `İstanbul Başakşehir` | each column starts at the same character index on every line | alignment with long / Turkish names (char width, not byte width) | — |
-| TC-093 | EP | FR-15, FR-12 | rows of TC-070 | rows B and C carry the unresolved marker; X and A do not | marker only on flagged rows | — |
-| TC-094 | BVA | FR-15, FR-07 | rows of TC-031(b) (A −1 pts, GD 0) and TC-010(b) (GD −3) | `-1`, `-3` printed with sign, columns still aligned | negative values widen columns | — |
-| TC-095 | EP | FR-14, FR-15 | `Main teams.csv matches.csv` with TC-012 data | stdout table B, A, C; successful exit; nothing on stderr | deductions file optional | — |
-| TC-096 | EP | FR-14, FR-07 | same + `deductions.csv` = `B;3` | B 7−3 = 4, C 4: h2h B–C 3-1 and C–B 0-1 → B 6 h2h pts → 1 A 5, 2 B 4, 3 C 4 | third argument used | — |
-| TC-097 | NEG, BVA | FR-14 | 0, 1, 4 arguments | usage message on stderr; non-zero exit; no table | wrong argument count (assumption Q11) | — |
-| TC-098 | NEG | V-08, V-03 | (a) missing file; (b) matches line `A;B;x;0` on line 2; (c) matches reference unregistered `Z` | one-line error on stderr naming file (+ line 2 for b, `Z` for c); non-zero exit; no table; no stack trace (assumption Q11) | errors reach the user cleanly | — |
-| TC-099 | EP | FR-14, FR-15 | teams `İstanbul Başakşehir`, `Şanlıurfaspor`, match `İstanbul Başakşehir;Şanlıurfaspor;1;1` | output (captured as UTF-8) contains both names intact, both marked unresolved, İstanbul Başakşehir first | end-to-end Turkish characters + D-02 | — |
+| TC-091 | EP | FR-13, FR-15 | rows of TC-012 | header + 3 rows in order B, A, C with pos, P, W, D, L, GF, GA, GD, Pts | all FR-13 fields present | Pass (run-01) |
+| TC-092 | EP | FR-15 | rows with names `A` and `İstanbul Başakşehir` | each column starts at the same character index on every line | alignment with long / Turkish names (char width, not byte width) | Pass (run-01) |
+| TC-093 | EP | FR-15, FR-12 | rows of TC-070 | rows B and C carry the unresolved marker; X and A do not | marker only on flagged rows | Pass (run-01) |
+| TC-094 | BVA | FR-15, FR-07 | rows of TC-031(b) (A −1 pts, GD 0) and TC-010(b) (GD −3) | `-1`, `-3` printed with sign, columns still aligned | negative values widen columns | Pass (run-01) |
+| TC-095 | EP | FR-14, FR-15 | `Main teams.csv matches.csv` with TC-012 data | stdout table B, A, C; successful exit; nothing on stderr | deductions file optional | Pass (run-01) |
+| TC-096 | EP | FR-14, FR-07 | same + `deductions.csv` = `B;3` | B 7−3 = 4, C 4: h2h B–C 3-1 and C–B 0-1 → B 6 h2h pts → 1 A 5, 2 B 4, 3 C 4 | third argument used | Pass (run-01) |
+| TC-097 | NEG, BVA | FR-14 | 0, 1, 4 arguments | usage message on stderr; non-zero exit; no table | wrong argument count (assumption Q11) | Pass (run-01) |
+| TC-098 | NEG | V-08, V-03 | (a) missing file; (b) matches line `A;B;x;0` on line 2; (c) matches reference unregistered `Z` | one-line error on stderr naming file (+ line 2 for b, `Z` for c); non-zero exit; no table; no stack trace (assumption Q11) | errors reach the user cleanly | Pass (run-01) |
+| TC-099 | EP | FR-14, FR-15 | teams `İstanbul Başakşehir`, `Şanlıurfaspor`, match `İstanbul Başakşehir;Şanlıurfaspor;1;1` | output (captured as UTF-8) contains both names intact, both marked unresolved, İstanbul Başakşehir first | end-to-end Turkish characters + D-02 | Pass (run-01) |
 
 ### 7.10 Generator, library, property-based / metamorphic — `generator/*`, `cli/MainScenarioTest`
 
@@ -482,23 +493,23 @@ TC-100..TC-134 as specified in §6 (technique PBT/MR, generator correctness, BVA
 
 White-box tests derived from requirements for gaps found in the JaCoCo report (`docs/coverage-analysis.md`).
 
-| TC | Class | Input | Expected | Basis |
-|---|---|---|---|---|
-| TC-140 | `cli/CoverageGapTest` | `Main.run(null, ...)` | exit 2, usage on stderr, stdout empty | FR-14, FR-15, D-03 |
-| TC-141 | `cli/CoverageGapTest` | `--scenario random` (no seed) | exit 0, header `Scenario Sxx (picked with seed N): ...`, rerun with that N succeeds | seed printed for reproducibility |
-| TC-142 | `cli/CoverageGapTest` | teams.csv `A,B,A` | exit 1, `Invalid data: Duplicate team`, no table | V-02 |
-| TC-143 | `cli/CoverageGapTest` | matches.csv with `A;B` twice | exit 1, `Invalid data: Duplicate fixture`, no table | V-06 |
-| TC-144 | `io/CoverageGapTest` | file with invalid UTF-8 bytes | `InputFormatException` "Cannot read file" | FR-14, V-08 |
-| TC-145 | `io/CoverageGapTest` | directory passed as file | `InputFormatException` | V-08 |
-| TC-146 | `io/CoverageGapTest` | reader that throws on `read` | `InputFormatException` "Cannot read teams.csv" | V-08 |
-| TC-147 | `io/CoverageGapTest` | reader that throws on `close` | `InputFormatException` "Cannot read matches.csv" | V-08 |
-| TC-148 | `generator/CoverageGapTest` | `writeCsv` then `CsvLoader` read-back (forfeit, deduction, Turkish names) | equal teams, matches, deductions | FR-14 format |
-| TC-149 | `generator/CoverageGapTest` | `writeCsv` with no deductions | `deductions.csv` is empty | writeCsv contract |
-| TC-150 | `generator/CoverageGapTest` | season and club lines with blank lines | model built, blank lines ignored | generator.md |
-| TC-151 | `generator/CoverageGapTest` | season line with 9 fields; non-integer `played` | `IllegalArgumentException` | generator.md input format |
-| TC-152 | `generator/CoverageGapTest` | one season only; blank-only club list | `IllegalArgumentException` | generator.md "Strength" |
-| TC-153 | `generator/CoverageGapTest` | `promotedAverage()` on a small model | attack 1.2, defence 1.4; club without history uses it | generator.md "Strength" |
-| TC-154 | `generator/CoverageGapTest` | `seed()`; `doubleRoundRobin` with 0, 1, 3, 17 and 2 teams | seed returned; invalid sizes rejected; 2 teams -> 2 rounds, venues swapped | generator.md "Schedule", BVA |
+| TC | Class | Input | Expected | Basis | Actual |
+|---|---|---|---|---|---|
+| TC-140 | `cli/CoverageGapTest` | `Main.run(null, ...)` | exit 2, usage on stderr, stdout empty | FR-14, FR-15, D-03 | Pass (run-03) |
+| TC-141 | `cli/CoverageGapTest` | `--scenario random` (no seed) | exit 0, header `Scenario Sxx (picked with seed N): ...`, rerun with that N succeeds | seed printed for reproducibility | Pass (run-03) |
+| TC-142 | `cli/CoverageGapTest` | teams.csv `A,B,A` | exit 1, `Invalid data: Duplicate team`, no table | V-02 | Pass (run-03) |
+| TC-143 | `cli/CoverageGapTest` | matches.csv with `A;B` twice | exit 1, `Invalid data: Duplicate fixture`, no table | V-06 | Pass (run-03) |
+| TC-144 | `io/CoverageGapTest` | file with invalid UTF-8 bytes | `InputFormatException` "Cannot read file" | FR-14, V-08 | Pass (run-03) |
+| TC-145 | `io/CoverageGapTest` | directory passed as file | `InputFormatException` | V-08 | Pass (run-03) |
+| TC-146 | `io/CoverageGapTest` | reader that throws on `read` | `InputFormatException` "Cannot read teams.csv" | V-08 | Pass (run-03) |
+| TC-147 | `io/CoverageGapTest` | reader that throws on `close` | `InputFormatException` "Cannot read matches.csv" | V-08 | Pass (run-03) |
+| TC-148 | `generator/CoverageGapTest` | `writeCsv` then `CsvLoader` read-back (forfeit, deduction, Turkish names) | equal teams, matches, deductions | FR-14 format | Pass (run-03) |
+| TC-149 | `generator/CoverageGapTest` | `writeCsv` with no deductions | `deductions.csv` is empty | writeCsv contract | Pass (run-03) |
+| TC-150 | `generator/CoverageGapTest` | season and club lines with blank lines | model built, blank lines ignored | generator.md | Pass (run-03) |
+| TC-151 | `generator/CoverageGapTest` | season line with 9 fields; non-integer `played` | `IllegalArgumentException` | generator.md input format | Pass (run-03) |
+| TC-152 | `generator/CoverageGapTest` | one season only; blank-only club list | `IllegalArgumentException` | generator.md "Strength" | Pass (run-03) |
+| TC-153 | `generator/CoverageGapTest` | `promotedAverage()` on a small model | attack 1.2, defence 1.4; club without history uses it | generator.md "Strength" | Pass (run-03) |
+| TC-154 | `generator/CoverageGapTest` | `seed()`; `doubleRoundRobin` with 0, 1, 3, 17 and 2 teams | seed returned; invalid sizes rejected; 2 teams -> 2 rounds, venues swapped | generator.md "Schedule", BVA | Pass (run-03) |
 
 ---
 
@@ -527,7 +538,9 @@ All under `src/test/java/edu/svv/standings/`. Each test method gets `@DisplayNam
 | `cli/CoverageGapTest` | TC-140..TC-143 | 4 | added after coverage analysis |
 | `io/CoverageGapTest` | TC-144..TC-147 | 4 | added after coverage analysis |
 | `generator/CoverageGapTest` | TC-148..TC-154 | 7 | added after coverage analysis |
-| **Total** | | **110** | |
+| **Total** | | **133** | |
+
+Executed JUnit invocations across these 133 TCs in the full suite (run-03): **655** (the 133 TCs expand through `@ParameterizedTest` data rows (e.g. 12 library scenarios + random seeds) and sub-variants such as TC-084a..f).
 
 Shared fixture suggestion: a tiny test helper `Leagues` (test scope) with `team(String)`, `m("A","B",2,1)`, `m("A","B",2,1,Forfeit.HOME)` to keep fixtures readable and identical to this plan.
 
@@ -540,7 +553,8 @@ Shared fixture suggestion: a tiny test helper `Leagues` (test scope) with `team(
 | Decision table | 022, 024, 032, 033, 034, 050..059 (10), 065..073 (9), 077 | 25 |
 | Negative | 002, 005, 006, 007, 009, 035, 040, 041, 042, 044, 046, 048, 084, 085, 086, 088, 090, 097, 098 | 19 |
 | Property-based / metamorphic / generator | 100..134 | 35 |
-| **Total** | | **118** |
+| White-box coverage-gap tests | 140..154 | 15 |
+| **Total** | | **133** |
 
 (Many TCs carry a secondary technique, shown in the Tech column; e.g. TC-050/051/054/055 are also BVA rows, TC-005/048/084 are also BVA.)
 
