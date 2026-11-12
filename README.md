@@ -40,9 +40,20 @@ java -jar target/tff-standings-engine-0.1.0-SNAPSHOT.jar examples/teams.csv exam
 
 The table has the columns Pos, Team, P, W, D, L, GF, GA, GD and Pts. A team that is still level with a neighbour after all tie-break criteria is marked with `*` (unresolved tie, requires a playoff).
 
-Exit codes: `0` success, `1` input error (missing file, malformed line, unknown team, invalid data), `2` wrong number of arguments. Error messages go to standard error and name the file and the 1-based line number.
+Exit codes: `0` success, `1` input error (missing file, malformed line, unknown team, invalid data, unknown scenario), `2` wrong number of arguments. Error messages go to standard error and name the file and the 1-based line number.
 
 The sample data in `examples/` uses real Süper Lig club names, but **all results and the point deduction are invented** for demonstration only.
+
+### Scenario library
+
+The program can also print the table of one of the 12 pre-generated, realistic random seasons stored in `src/main/resources/scenarios/`:
+
+```
+java -jar target/tff-standings-engine-0.1.0-SNAPSHOT.jar --scenario S04
+java -jar target/tff-standings-engine-0.1.0-SNAPSHOT.jar --scenario random 42
+```
+
+`--scenario <id>` loads that scenario (`S01` to `S12`); `--scenario random [seed]` picks one with the given seed (without a seed the current time is used and printed, so the pick can be repeated). The first output line names the scenario and describes it. The seasons were generated from the 2026-27 clubs' real results of the last ten seasons; the results themselves are simulated. How they are generated and why these 12 were chosen is described in [docs/generator.md](docs/generator.md).
 
 ## CSV format
 

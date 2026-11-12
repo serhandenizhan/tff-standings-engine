@@ -62,7 +62,7 @@ Zincir: **2026–27 Süper Lig Müsabakaları Statüsü** (Md. 3: 18 takım, çi
 - [ ] Test planı → JUnit → defect log → fix → regresyon → coverage → rapor
 
 ## Faz planı (otonom)
-1. ✅ CSV okuyucu + CLI + örnek veri + README (e2ef8f4). Üreteç ilk taslağı (garantili senaryolar) kullanıcı kararıyla yeniden yazılacak: veri araştırması → güç modeli → senaryo kütüphanesi
+1. ✅ CSV okuyucu + CLI + örnek veri + README (e2ef8f4). Gerçek veri (5618900). Üreteç: güç modeli (son 10 sezon, Poisson, H=1.10), çift devreli fikstür, 12 senaryoluk kütüphane `src/main/resources/scenarios/` (S01–S12), CLI `--scenario <id|random> [seed]`, gerçekçilik kontrolü `docs/generator.md`
 2. ✅ Test planı `docs/test-plan.md` (a86b88b, 95 TC): EP, BVA, karar tablosu, negatif, regresyon, rastgele/metamorfik, izlenebilirlik
 3. ✅ JUnit testleri: 125 çalıştırma, 3 kırmızı (TC-078, TC-079 Türkçe alfabe; TC-087 boş 5. alan) → kırmızı commit. Üreteç/özellik testleri (TC-100..111) üreteç yeniden yazılınca eklenecek
 4. ✅ Defect log: DEF-001 Türkçe alfabe (`37b9388`), DEF-002 boş hükmen alanı (`e03aea7`); regresyon 125/125 (`docs/results/run-02-after-fixes`). Üreteç testleri sonrası yeni defect çıkarsa DEF-003+
