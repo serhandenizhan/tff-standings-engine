@@ -179,6 +179,10 @@ public class CsvLoader {
     }
 
     private Forfeit parseForfeit(String text, String sourceName, int lineNo) {
+        // DEF-002: 5. alan var ama boşsa ("A;B;1;0;") alan verilmemiş sayılır; FR-14: varsayılan NONE
+        if (text.isEmpty()) {
+            return Forfeit.NONE;
+        }
         try {
             return Forfeit.valueOf(text);
         } catch (IllegalArgumentException e) {
