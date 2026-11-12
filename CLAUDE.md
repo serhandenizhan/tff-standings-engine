@@ -65,7 +65,7 @@ Zincir: **2026–27 Süper Lig Müsabakaları Statüsü** (Md. 3: 18 takım, çi
 1. ✅ CSV okuyucu + CLI + örnek veri + README (e2ef8f4). Üreteç ilk taslağı (garantili senaryolar) kullanıcı kararıyla yeniden yazılacak: veri araştırması → güç modeli → senaryo kütüphanesi
 2. ✅ Test planı `docs/test-plan.md` (a86b88b, 95 TC): EP, BVA, karar tablosu, negatif, regresyon, rastgele/metamorfik, izlenebilirlik
 3. ✅ JUnit testleri: 125 çalıştırma, 3 kırmızı (TC-078, TC-079 Türkçe alfabe; TC-087 boş 5. alan) → kırmızı commit. Üreteç/özellik testleri (TC-100..111) üreteç yeniden yazılınca eklenecek
-4. Defect log `docs/defect-log.md` + defect başına fix commit'i + regresyon (Sonnet fix, Opus inceleme)
+4. ✅ Defect log: DEF-001 Türkçe alfabe (`37b9388`), DEF-002 boş hükmen alanı (`e03aea7`); regresyon 125/125 (`docs/results/run-02-after-fixes`). Üreteç testleri sonrası yeni defect çıkarsa DEF-003+
 5. Coverage analizi + `docs/results/` (surefire + jacoco kopyası)
 6. Rapor taslağı `docs/report.md` + son kontrol
 
@@ -74,4 +74,4 @@ Zincir: **2026–27 Süper Lig Müsabakaları Statüsü** (Md. 3: 18 takım, çi
 - `MatchResult` sahadaki gerçek skoru tutar; hükmen düzeltmesi (FMT 23/4) hesaplayıcıda yapılır.
 - AI log'a yeni satır **en alta** eklenir.
 - 2 takım için ayrı kod yok: 9/2-b sırası 2 takımda 9/2-a ile aynı sonucu verir (ikili averaj eşitse ikili goller de eşit).
-- Şüpheli (henüz testle doğrulanmadı, düzeltilmedi): D-02 alfabetik sıralama `String.compareTo` ile → Türkçe harfler (Ç, İ, Ş...) yanlış sıralanabilir.
+- D-02 alfabetik sıralama tr-TR Collator ile (DEF-001).

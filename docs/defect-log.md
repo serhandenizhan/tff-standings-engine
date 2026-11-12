@@ -24,7 +24,7 @@ Priority scale: P1 (fix before anything else) / P2 (fix in this cycle) / P3 (can
 | Severity | Medium: the table content and the unresolved flags are right, but the display order of unresolved teams breaks decision D-02 for any club whose name starts with a Turkish letter |
 | Priority | P2: not a data-loss problem, but the library is built for Turkish club names, so the case is realistic and the fix is small |
 | Requirement violated | D-02 (alphabetical display order of unresolved teams, Turkish alphabet); FR-12 (unresolved teams are marked, display order per D-02) |
-| Status | Fixed (pending commit); verified by run-02-after-fixes |
+| Status | Closed — fixed and verified by run-02-after-fixes |
 
 **Steps to reproduce.** Calculate a table for the teams `Denizlispor` and `Çaykur Rizespor` with one match `Denizlispor;Çaykur Rizespor;1;1` (TC-079). Both teams have the same points, the same head-to-head record, the same goal difference and goals scored, so no criterion separates them and the display order decides. TC-078 uses 11 teams without matches, entered in reverse alphabetical order.
 
@@ -51,7 +51,7 @@ and the unresolved-marking loop (which uses `criteria.compare`) are unchanged, s
 `StandingsCalculator.pairKey` also uses `compareTo`, but only as an internal, consistent key and not for display, so it is left as is.
 Only `TieBreaker.java` is changed.
 
-**Regression evidence.** `docs/results/run-02-after-fixes/`: TC-078 and TC-079 pass, full suite 125/125. Fix commit: TBD.
+**Regression evidence.** `docs/results/run-02-after-fixes/`: TC-078 and TC-079 pass, full suite 125/125. Fix commit: `37b9388`.
 
 ---
 
@@ -65,7 +65,7 @@ Only `TieBreaker.java` is changed.
 | Severity | Medium: a valid file is rejected with an exception, so no table is produced; there is an easy workaround (omit the trailing `;`) |
 | Priority | P2: spreadsheet exports commonly write a trailing empty column, so real files will hit it, but nothing is corrupted |
 | Requirement violated | FR-14 (forfeit is optional, default NONE); test plan appendix Q9 (empty fifth field means NONE) |
-| Status | Fixed (pending commit); verified by run-02-after-fixes |
+| Status | Closed — fixed and verified by run-02-after-fixes |
 
 **Steps to reproduce.** Load a matches file containing the single line `A;B;1;0;` with teams `A` and `B` (the line has five fields, the last one empty).
 
@@ -86,7 +86,7 @@ by reading `split` and `parseMatches` before the change; no other code path touc
 **Fix.** `parseForfeit` returns `Forfeit.NONE` when the (already trimmed) text is empty. All other values behave as before:
 `NONE`, `HOME`, `AWAY` are accepted, anything else (including lowercase `home`, TC-086) is still rejected. Only `CsvLoader.java` is changed.
 
-**Regression evidence.** `docs/results/run-02-after-fixes/`: TC-087 passes, TC-086 still passes, full suite 125/125. Fix commit: TBD.
+**Regression evidence.** `docs/results/run-02-after-fixes/`: TC-087 passes, TC-086 still passes, full suite 125/125. Fix commit: `e03aea7`.
 
 ---
 
