@@ -1,0 +1,14 @@
+-------------------------------------------------------------------------------
+Test set: edu.svv.standings.io.CsvLoaderTest
+-------------------------------------------------------------------------------
+Tests run: 29, Failures: 0, Errors: 1, Skipped: 0, Time elapsed: 0.100 s <<< FAILURE! -- in edu.svv.standings.io.CsvLoaderTest
+edu.svv.standings.io.CsvLoaderTest.tc087_emptyFifthFieldIsNone -- Time elapsed: 0.002 s <<< ERROR!
+edu.svv.standings.io.InputFormatException: matches.csv, line 1: unknown forfeit value '' (expected NONE, HOME or AWAY)
+	at edu.svv.standings.io.CsvLoader.error(CsvLoader.java:196)
+	at edu.svv.standings.io.CsvLoader.parseForfeit(CsvLoader.java:185)
+	at edu.svv.standings.io.CsvLoader.parseMatches(CsvLoader.java:97)
+	at edu.svv.standings.io.CsvLoaderTest.tc087_emptyFifthFieldIsNone(CsvLoaderTest.java:216)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+

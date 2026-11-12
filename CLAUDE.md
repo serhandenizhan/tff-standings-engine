@@ -5,8 +5,9 @@ Bireysel SVV ödevi: TFF puan eşitliği kurallarına göre lig tablosu üreten 
 ## Kurallar (zorunlu)
 - Kod, dosya, sınıf/metot isimleri İngilizce. Kod içi yorumlar **sadece Türkçe**.
 - Stack: Java, Maven, JUnit 5, JaCoCo. GUI ve veritabanı yok.
-- Commit öncesi kullanıcıya sor, onayla commit at. Onaysız push yok.
-- Her adım küçük; kullanıcı anlayıp onaylamadan ilerleme. Her test / sınır değer için "neden" açıklanır.
+- Git: 2026-11-12'den itibaren **her faz sonunda izin almadan commit + push** (kullanıcı talimatı). Faz içi ara commit'ler serbest.
+- Otonom mod (kullanıcı PC başında değil): orkestratör = ana oturum (Opus), alt ajanlar çoğunlukla Sonnet, zor işler Opus; tüm alt ajanlar low/medium effort. Ajanlar commit atmaz, orkestratöre rapor verir; orkestratör kontrol edip commit'ler. Her test / sınır değer için "neden" dokümanlara yazılır.
+- Alt ajanlar mevcut çekirdek kodda (model/, StandingsCalculator, TieBreaker, StandingRow) hata görürse **düzeltmez, raporlar** (hatalar testlerle bulunup defect log'a girecek).
 - Süreç gerçek yaşanır: gereksinim → ilk sürüm kod (bilerek "temiz" yazılmaz) → test planı + JUnit → defect log → düzeltme → regresyon. Commit geçmişi bunu göstermeli, hatalar saklanmaz.
 - AI kullanımı `docs/ai-usage-log.md` dosyasına her adımda işlenir.
 - TFF kural/madde numarası uydurulmaz; kaynaksızsa "varsayım" olarak işaretlenir.
@@ -26,6 +27,11 @@ Bireysel SVV ödevi: TFF puan eşitliği kurallarına göre lig tablosu üreten 
 | 2026-11-12 | Son kriter (eleme maçı) hesaplanmaz → "çözülemedi" döner | Sahada oynanacak maç, yazılım karar veremez |
 | 2026-11-12 | Veri girişi: CSV (`;`, UTF-8, başlıksız) + komut satırı (D-03) | Ödev çalıştırılabilir uygulama istiyor; CSV ayrıştırma ek negatif test alanı |
 | 2026-11-12 | GitHub reposu public | Kullanıcı tercihi |
+| 2026-11-12 | Rapor: tam taslak, İngilizce Markdown (`docs/report.md`); kişisel bölümler (Java öğrenme zorlukları) ve ad/no yer tutucu | Kullanıcı tercihi |
+| 2026-11-12 | Hata bulan testler düzeltmeden önce kırmızı commit'lenir | Süreç commit geçmişinde görünsün |
+| 2026-11-12 | Senaryo üreteci: garantili eşitlik YOK. Gerçekçi rastgele sezonlar (18 takım, gerçekçi gol dağılımı, ~%1 hükmen, nadir puan silme, tam + sezon ortası); bunlardan 10–12'si önceden seçilip CSV olarak repoya konur (çeşitlilik: eşitlik yok / 2'li / 3'lü / hükmen+silme / hepsi / en az bir tamamen çözülemez). Program ve testler kütüphaneden seed ile rastgele birini seçer | Kullanıcı kararı |
+| 2026-11-12 | Takım gücü: güncel 2026–27 Süper Lig kulüpleri; son 10 sezonun (2016–17..2025–26) gerçek puan/gol/sıra verisi; düşüp çıkanlar için sadece Süper Lig sezonlarının ortalaması; pencerede hiç Süper Lig sezonu olmayanlar için yeni çıkan takımların ilk sezon ortalaması | Kullanıcı kararı: şampiyon/küme düşen gerçekçi olsun |
+| 2026-11-12 | Test planı belirsizlikleri (Q1–Q13) orkestratör tarafından çözüldü; Q3 (null forfeit) FR-14 ile tutarlı olarak NONE kabul edildi | Kullanıcı yokken; test-plan.md ekinde kayıtlı |
 
 ## Kural kaynağı
 Zincir: **2026–27 Süper Lig Müsabakaları Statüsü** (Md. 3: 18 takım, çift devreli lig; eşitlik kuralı yok, aksine hüküm yok) → **TFF Futbol Müsabaka Talimatı (FMT)** — https://www.tff.org/Resources/TFF/Documents/TALIMATLAR/Futbol-Musabaka-Talimati.pdf (PDF 18.08.2025). `TFF-Statusu.pdf` (federasyon ana statüsü) bu konuyla ilgisiz.
@@ -54,6 +60,14 @@ Zincir: **2026–27 Süper Lig Müsabakaları Statüsü** (Md. 3: 18 takım, çi
   - [ ] CSV okuyucu + komut satırı (FR-14, FR-15, V-08) — requirements v1.1 onaylandı
 - GitHub: https://github.com/serhandenizhan/tff-standings-engine (public, remote `origin`). Push yalnızca onayla.
 - [ ] Test planı → JUnit → defect log → fix → regresyon → coverage → rapor
+
+## Faz planı (otonom)
+1. ✅ CSV okuyucu + CLI + örnek veri + README (e2ef8f4). Üreteç ilk taslağı (garantili senaryolar) kullanıcı kararıyla yeniden yazılacak: veri araştırması → güç modeli → senaryo kütüphanesi
+2. ✅ Test planı `docs/test-plan.md` (a86b88b, 95 TC): EP, BVA, karar tablosu, negatif, regresyon, rastgele/metamorfik, izlenebilirlik
+3. ✅ JUnit testleri: 125 çalıştırma, 3 kırmızı (TC-078, TC-079 Türkçe alfabe; TC-087 boş 5. alan) → kırmızı commit. Üreteç/özellik testleri (TC-100..111) üreteç yeniden yazılınca eklenecek
+4. Defect log `docs/defect-log.md` + defect başına fix commit'i + regresyon (Sonnet fix, Opus inceleme)
+5. Coverage analizi + `docs/results/` (surefire + jacoco kopyası)
+6. Rapor taslağı `docs/report.md` + son kontrol
 
 ## Tasarım notları
 - Nesne düzeyi doğrulama record constructor'larında; takımlar arası doğrulama (bilinmeyen takım, tekrarlanan maç) hesaplayıcıda.

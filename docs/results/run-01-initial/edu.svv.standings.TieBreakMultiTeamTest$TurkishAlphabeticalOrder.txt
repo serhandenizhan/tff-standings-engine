@@ -1,0 +1,32 @@
+-------------------------------------------------------------------------------
+Test set: edu.svv.standings.TieBreakMultiTeamTest$TurkishAlphabeticalOrder
+-------------------------------------------------------------------------------
+Tests run: 2, Failures: 2, Errors: 0, Skipped: 0, Time elapsed: 0.004 s <<< FAILURE! -- in edu.svv.standings.TieBreakMultiTeamTest$TurkishAlphabeticalOrder
+edu.svv.standings.TieBreakMultiTeamTest$TurkishAlphabeticalOrder.tc078 -- Time elapsed: 0.003 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: sıra / çözülemedi bayrağı ==> expected: <[Ankaragücü!, Beşiktaş!, Çaykur Rizespor!, Denizlispor!, Iğdır FK!, İstanbul Başakşehir!, Kasımpaşa!, Şanlıurfaspor!, Trabzonspor!, Ümraniyespor!, Vanspor!]> but was: <[Ankaragücü!, Beşiktaş!, Denizlispor!, Iğdır FK!, Kasımpaşa!, Trabzonspor!, Vanspor!, Çaykur Rizespor!, Ümraniyespor!, İstanbul Başakşehir!, Şanlıurfaspor!]>
+	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
+	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
+	at org.junit.jupiter.api.AssertEquals.failNotEqual(AssertEquals.java:197)
+	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:182)
+	at org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:1156)
+	at edu.svv.standings.TieFixtures.assertTable(TieFixtures.java:52)
+	at edu.svv.standings.TieBreakMultiTeamTest$TurkishAlphabeticalOrder.tc078(TieBreakMultiTeamTest.java:179)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+edu.svv.standings.TieBreakMultiTeamTest$TurkishAlphabeticalOrder.tc079 -- Time elapsed: 0.001 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: sıra / çözülemedi bayrağı ==> expected: <[Çaykur Rizespor!, Denizlispor!]> but was: <[Denizlispor!, Çaykur Rizespor!]>
+	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
+	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
+	at org.junit.jupiter.api.AssertEquals.failNotEqual(AssertEquals.java:197)
+	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:182)
+	at org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:1156)
+	at edu.svv.standings.TieFixtures.assertTable(TieFixtures.java:52)
+	at edu.svv.standings.TieBreakMultiTeamTest$TurkishAlphabeticalOrder.tc079(TieBreakMultiTeamTest.java:191)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
