@@ -24,6 +24,8 @@ Bireysel SVV ödevi: TFF puan eşitliği kurallarına göre lig tablosu üreten 
 | 2026-11-12 | Konu B (puan durumu/averaj) seçildi, A bırakıldı | Algoritmik zorluk → gerçek bug; kurallar deterministik ve tek maddede; süreye sığar |
 | 2026-11-12 | Kaynak: Süper Lig statüsü → FMT Md. 9, 23/4, 24 | Statü eşitlik için FMT'ye bırakıyor; fair-play/kura FMT'de yok |
 | 2026-11-12 | Son kriter (eleme maçı) hesaplanmaz → "çözülemedi" döner | Sahada oynanacak maç, yazılım karar veremez |
+| 2026-11-12 | Veri girişi: CSV (`;`, UTF-8, başlıksız) + komut satırı (D-03) | Ödev çalıştırılabilir uygulama istiyor; CSV ayrıştırma ek negatif test alanı |
+| 2026-11-12 | GitHub reposu public | Kullanıcı tercihi |
 
 ## Kural kaynağı
 Zincir: **2026–27 Süper Lig Müsabakaları Statüsü** (Md. 3: 18 takım, çift devreli lig; eşitlik kuralı yok, aksine hüküm yok) → **TFF Futbol Müsabaka Talimatı (FMT)** — https://www.tff.org/Resources/TFF/Documents/TALIMATLAR/Futbol-Musabaka-Talimati.pdf (PDF 18.08.2025). `TFF-Statusu.pdf` (federasyon ana statüsü) bu konuyla ilgisiz.
@@ -49,6 +51,8 @@ Zincir: **2026–27 Süper Lig Müsabakaları Statüsü** (Md. 3: 18 takım, çi
   - [x] Model: `model/` paketi — `Team`, `Forfeit`, `MatchResult`, `PointDeduction` (record; nesne düzeyi doğrulama V-01/02/04/05/07)
   - [ ] İstatistik + puan hesabı (FR-04..08), çapraz doğrulama (V-03, V-06)
   - [ ] Eşitlik bozma (FR-09..12) + çıktı (FR-13)
+  - [ ] CSV okuyucu + komut satırı (FR-14, FR-15, V-08) — requirements v1.1 onaylandı
+- GitHub: https://github.com/serhandenizhan/tff-standings-engine (public, remote `origin`). Push yalnızca onayla.
 - [ ] Test planı → JUnit → defect log → fix → regresyon → coverage → rapor
 
 ## Tasarım notları

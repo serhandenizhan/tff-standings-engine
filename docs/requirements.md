@@ -1,11 +1,11 @@
 # Requirements Specification — TFF Standings Engine
 
-> Status: **v1.0** — approved by student (2026-11-12).
+> Status: **v1.1** — approved by student (2026-11-12). v1.1 adds CSV/CLI input (FR-14, FR-15, V-08).
 > Sources: 2026–27 Süper Lig Müsabakaları Statüsü (SLS), TFF Futbol Müsabaka Talimatı (FMT), TFF Futbol Disiplin Talimatı (FDT).
 
 ## 1. Scope
 
-A pure Java library that takes a list of teams, played match results and point deductions, and produces the final league table ordered according to FMT Art. 9. No GUI, no database, no file/network I/O.
+A Java application that takes a list of teams, played match results and point deductions, and produces the final league table ordered according to FMT Art. 9. The core is a pure library; a small command-line front end reads the inputs from CSV files and prints the table. No GUI, no database, no network I/O.
 
 ## 2. Inputs
 
@@ -32,6 +32,8 @@ A pure Java library that takes a list of teams, played match results and point d
 | FR-11 | Within the 3+ procedure, if some teams are still level, the mini-table shall **not** be rebuilt for them; the remaining criteria of FR-10 continue to apply. | FMT 9/2-b I (parenthesis) |
 | FR-12 | If teams remain level after all criteria, the system shall mark them as "unresolved — requires playoff" instead of ordering them arbitrarily. | FMT 9/2-a VI, 9/2-b VIII |
 | FR-13 | The output shall be a ranked list with position, all FR-05 statistics, points after deduction, and the unresolved flag. | — |
+| FR-14 | The command-line application shall read teams, matches and deductions from UTF-8, semicolon-separated files without a header row. Formats: `teams` = `name`; `matches` = `home;away;homeGoals;awayGoals;forfeit` (forfeit = NONE / HOME / AWAY, optional, default NONE); `deductions` = `team;points`. The deductions file is optional. Blank lines are ignored. | — |
+| FR-15 | The command-line application shall print the table to standard output in aligned columns and mark unresolved teams. | — |
 
 ## 4. Validation (invalid inputs must be rejected with an exception and a clear message)
 
@@ -44,6 +46,7 @@ A pure Java library that takes a list of teams, played match results and point d
 | V-05 | Negative goal count |
 | V-06 | Duplicate fixture (same home/away pair twice) or more than two matches between two teams |
 | V-07 | Point deduction of zero or negative points, or for an unregistered team |
+| V-08 | Malformed CSV line (wrong field count, non-integer number, unknown forfeit value) or missing file — rejected with file name and line number |
 
 ## 5. Assumptions
 
@@ -67,3 +70,4 @@ A pure Java library that takes a list of teams, played match results and point d
 |---|---|---|
 | D-01 | Are team names compared case-sensitively? | Exact match after trimming. |
 | D-02 | How are unresolved teams listed? | Consecutive positions, alphabetical order for display only, flagged. |
+| D-03 | How is data entered? | CSV files + command-line front end (FR-14, FR-15). No fixture generation; only played results. |
