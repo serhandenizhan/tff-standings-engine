@@ -3,11 +3,13 @@ package edu.svv.standings;
 import edu.svv.standings.model.MatchResult;
 import edu.svv.standings.model.Team;
 
+import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -51,7 +53,10 @@ class TieBreaker {
 
         List<StandingRow> ordered = new ArrayList<>(tiedGroup);
         // D-02: kriterlerle ayrılamayanlar sadece görüntü için alfabetik dizilir
-        ordered.sort(criteria.thenComparing(r -> r.getTeam().name()));
+        // DEF-001: String.compareTo kod noktası sırası kullanıyordu (Ç, İ, Ş, Ü Z'den sonra geliyordu);
+        // Türkçe alfabe için tr-TR Collator kullanılır. FMT kriter karşılaştırıcısı (criteria) değişmedi.
+        Collator turkish = Collator.getInstance(Locale.forLanguageTag("tr-TR"));
+        ordered.sort(criteria.thenComparing(r -> r.getTeam().name(), turkish));
 
         // FR-12: komşusuyla tüm kriterlerde eşit olan takım "çözülemedi" olarak işaretlenir
         for (int i = 0; i < ordered.size() - 1; i++) {
