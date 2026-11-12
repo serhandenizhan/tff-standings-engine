@@ -22,18 +22,27 @@ Bireysel SVV ödevi: TFF puan eşitliği kurallarına göre lig tablosu üreten 
 | Tarih | Karar | Gerekçe |
 |---|---|---|
 | 2026-11-12 | Konu B (puan durumu/averaj) seçildi, A bırakıldı | Algoritmik zorluk → gerçek bug; kurallar deterministik ve tek maddede; süreye sığar |
-| 2026-11-12 | Fair-play ve kura kapsam dışı (önerilen, kesinleşmedi) | Kart verisi ve rastgelelik kapsamı şişirir; kura gerekirse "çözülemedi" |
+| 2026-11-12 | Kaynak: Süper Lig statüsü → FMT Md. 9, 23/4, 24 | Statü eşitlik için FMT'ye bırakıyor; fair-play/kura FMT'de yok |
+| 2026-11-12 | Son kriter (eleme maçı) hesaplanmaz → "çözülemedi" döner | Sahada oynanacak maç, yazılım karar veremez |
 
 ## Kural kaynağı
-- Şu an: TFF 2025–26 Gelişim Ligleri Statüsü, Md. 17/A — https://www.tff.org/Resources/TFF/Auto/f2fa7c08703241dca712a036a3bb1085.pdf
-- 2 takım: ikili puan → ikili averaj (deplasman golü yok) → genel averaj → atılan gol → hükmen yenilgisi olmayan → fair-play → kura.
-- 3+ takım: eşit takımlar arası mini tablo (alt eşitlikte maçlara tekrar bakılmaz) → mini puan → mini averaj → mini gol → genel averaj → genel gol → hükmen → fair-play → kura.
-- Beklenen: Süper Lig statüsü (kullanıcı arıyor). Gelirse kaynak onunla değişir.
+Zincir: **2026–27 Süper Lig Müsabakaları Statüsü** (Md. 3: 18 takım, çift devreli lig; eşitlik kuralı yok, aksine hüküm yok) → **TFF Futbol Müsabaka Talimatı (FMT)** — https://www.tff.org/Resources/TFF/Documents/TALIMATLAR/Futbol-Musabaka-Talimati.pdf (PDF 18.08.2025). `TFF-Statusu.pdf` (federasyon ana statüsü) bu konuyla ilgisiz.
+- **FMT 9/1:** galibiyet 3, beraberlik 1, mağlubiyet 0.
+- **FMT 9/2-a (2 takım):** I ikili puan → II ikili averaj (deplasman golü üstünlük sağlamaz) → III genel averaj → IV genel atılan gol → V hükmen yenilgisi olmayan → VI tek maçlı eleme (hesaplanamaz).
+- **FMT 9/2-b (3+ takım):** I eşitler arası mini tablo, *alt eşitlikte o takımların maçlarına tekrar bakılmaz* (ikili kurala dönülmez) → II mini puan → III mini averaj → IV mini atılan gol → V genel averaj → VI genel atılan gol → VII hükmen yenilgisi olmayan → VIII TFF'nin belirleyeceği maç(lar).
+- **FMT 9/3:** TFF averajı uygulamamaya karar verebilir (kapsam dışı).
+- **FMT 23/4:** hükmen: galibe 3 gol, mağlubun golleri geçersiz, galip 3'ten fazla attıysa o goller geçerli (5-2 → 5-0; 1-2 → 3-0).
+- **FMT 24/1-a:** sahaya çıkmama/terk: hükmen mağlubiyet + galibiyet puanı kadar (3) puan silinir.
+- Kullanıcı bilgisi: ikili averaj iki maçın toplamı; sıralama her zaman (sezon içi de) aynı kurala göre; silinen puan sonrası eşitlikte kriterlere bakılır.
+- **FDT Md. 33:** puan indirme = kulübün "mevcut ya da ileride kazanacağı" puanlarından indirim → puan negatif olabilir.
+- **Varsayım (kaynaksız):** puan silme yalnızca genel puanı etkiler, ikili/mini tablo puanları maç sonuçlarından hesaplanır.
+- **Varsayım:** gol averajı = atılan − yenilen (FMT tanımlamıyor; Türkiye'deki yerleşik kullanım).
+- Kaynakta yok / kapsam dışı: ligden çekilen takımın önceki maçlarının akıbeti, ertelenmiş maçlar (tabloya sadece oynanmış/tescilli maçlar girer).
 
 ## Durum
 - [x] Konu seçildi, klasör + git repo (main) kuruldu
-- [ ] Süper Lig statüsü / eksik kurallar netleşecek
+- [x] Süper Lig statüsü + FMT okundu, açık sorular cevaplandı
 - [x] Java + Maven kuruldu (Homebrew): openjdk@21 (keg-only), Maven 3.10.0. `~/.zshrc` içinde JAVA_HOME Java 21'e sabitlendi (yedek: `~/.zshrc.bak-tff`); `java` ve `mvn` Java 21 kullanıyor. Sistem locale'i tr_TR.
-- [ ] Gereksinim belirtimi (FR'ler, madde bağlantılı)
+- [x] Gereksinim belirtimi: `docs/requirements.md` v1.0 onaylandı (D-01 birebir isim, D-02 alfabetik + işaret)
 - [x] Maven iskeleti: pom.xml (Java 21, JUnit 5.11.4, Surefire 3.5.2, JaCoCo 0.8.13), paket `edu.svv.standings`. `mvn verify` → testler + `target/site/jacoco/index.html`. Geçici smoke test ile doğrulandı, sonra silindi.
 - [ ] İlk sürüm kod → test planı → JUnit → defect log → fix → regresyon → coverage → rapor
