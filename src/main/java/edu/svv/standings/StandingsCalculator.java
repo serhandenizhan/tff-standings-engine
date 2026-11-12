@@ -19,6 +19,8 @@ import java.util.Set;
  */
 public class StandingsCalculator {
 
+    private final TieBreaker tieBreaker = new TieBreaker();
+
     public List<StandingRow> calculate(List<Team> teams, List<MatchResult> matches, List<PointDeduction> deductions) {
         // V-01: listeler null olamaz
         if (teams == null || matches == null || deductions == null) {
@@ -44,10 +46,21 @@ public class StandingsCalculator {
             row.addDeduction(deduction.points());
         }
 
-        List<StandingRow> table = new ArrayList<>(rows.values());
+        List<StandingRow> sorted = new ArrayList<>(rows.values());
         // FR-08: önce puana göre azalan sıralama
-        // TODO: eşitlik bozma (FR-09..FR-12) bir sonraki adımda eklenecek
-        table.sort(Comparator.comparingInt(StandingRow::getPoints).reversed());
+        sorted.sort(Comparator.comparingInt(StandingRow::getPoints).reversed());
+
+        // FR-09..FR-12: aynı puandaki ardışık takımlar grup olarak eşitlik bozmaya gönderilir
+        List<StandingRow> table = new ArrayList<>();
+        int start = 0;
+        while (start < sorted.size()) {
+            int end = start + 1;
+            while (end < sorted.size() && sorted.get(end).getPoints() == sorted.get(start).getPoints()) {
+                end++;
+            }
+            table.addAll(tieBreaker.order(sorted.subList(start, end), matches));
+            start = end;
+        }
 
         for (int i = 0; i < table.size(); i++) {
             table.get(i).setPosition(i + 1);

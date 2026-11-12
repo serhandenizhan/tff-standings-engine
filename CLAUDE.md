@@ -49,8 +49,8 @@ Zincir: **2026–27 Süper Lig Müsabakaları Statüsü** (Md. 3: 18 takım, çi
 - [x] Maven iskeleti: pom.xml (Java 21, JUnit 5.11.4, Surefire 3.5.2, JaCoCo 0.8.13), paket `edu.svv.standings`. `mvn verify` → testler + `target/site/jacoco/index.html`. Geçici smoke test ile doğrulandı, sonra silindi.
 - [ ] İlk sürüm kod (v1, bilerek cilalanmaz, bilerek hata da eklenmez):
   - [x] Model: `model/` paketi — `Team`, `Forfeit`, `MatchResult`, `PointDeduction` (record; nesne düzeyi doğrulama V-01/02/04/05/07)
-  - [x] İstatistik + puan hesabı (FR-04..08), çapraz doğrulama (V-01/02/03/06/07): `StandingRow`, `StandingsCalculator` (şimdilik sadece puana göre sıralıyor)
-  - [ ] Eşitlik bozma (FR-09..12) + çıktı (FR-13)
+  - [x] İstatistik + puan hesabı (FR-04..08), çapraz doğrulama (V-01/02/03/06/07): `StandingRow`, `StandingsCalculator` 
+  - [x] Eşitlik bozma (FR-09..12): `TieBreaker` — tek mini tablo + genel kriterler, komşu eşitse unresolved, görüntü için alfabetik. FR-13 çıktısı `StandingRow` ile karşılanıyor.
   - [ ] CSV okuyucu + komut satırı (FR-14, FR-15, V-08) — requirements v1.1 onaylandı
 - GitHub: https://github.com/serhandenizhan/tff-standings-engine (public, remote `origin`). Push yalnızca onayla.
 - [ ] Test planı → JUnit → defect log → fix → regresyon → coverage → rapor
@@ -59,3 +59,5 @@ Zincir: **2026–27 Süper Lig Müsabakaları Statüsü** (Md. 3: 18 takım, çi
 - Nesne düzeyi doğrulama record constructor'larında; takımlar arası doğrulama (bilinmeyen takım, tekrarlanan maç) hesaplayıcıda.
 - `MatchResult` sahadaki gerçek skoru tutar; hükmen düzeltmesi (FMT 23/4) hesaplayıcıda yapılır.
 - AI log'a yeni satır **en alta** eklenir.
+- 2 takım için ayrı kod yok: 9/2-b sırası 2 takımda 9/2-a ile aynı sonucu verir (ikili averaj eşitse ikili goller de eşit).
+- Şüpheli (henüz testle doğrulanmadı, düzeltilmedi): D-02 alfabetik sıralama `String.compareTo` ile → Türkçe harfler (Ç, İ, Ş...) yanlış sıralanabilir.
