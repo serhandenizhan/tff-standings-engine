@@ -69,16 +69,16 @@ Zincir: **2026–27 Süper Lig Müsabakaları Statüsü** (Md. 3: 18 takım, çi
 3. ✅ JUnit testleri: 125 çalıştırma, 3 kırmızı (TC-078, TC-079 Türkçe alfabe; TC-087 boş 5. alan) → kırmızı commit. Üreteç + özellik/metamorfik testleri eklendi (TC-100..134, toplam 640 çalıştırma, hepsi geçti; yeni defect yok)
 4. ✅ Defect log: DEF-001 Türkçe alfabe (`37b9388`), DEF-002 boş hükmen alanı (`e03aea7`); regresyon 125/125 (`docs/results/run-02-after-fixes`). Üreteç testleri sonrası yeni defect çıkarsa DEF-003+
 5. ✅ Coverage: `docs/coverage-analysis.md`, `docs/results/coverage/`, `docs/results/run-03-full-suite/`. 655 çalıştırma yeşil. Toplam branch %71.0 (araçlar hariç %97.5); kalan boşluklar ulaşılamaz/savunmacı kod veya araç kodu. Yeni defect yok
-6. ✅ Rapor taslağı `docs/report.md` (~10k kelime, İngilizce) + test planı Actual sütunu dolduruldu + README dokümantasyon tablosu.
+6. ✅ Test planı Actual sütunu dolduruldu, README dokümantasyon tablosu. (Uzun İngilizce/Türkçe rapor taslakları 2026-11-13'te kullanıcı isteğiyle silindi; git geçmişinde duruyor.)
+9. ✅ Bağımsız kod incelemesi (4 ajan): DEF-003 `|` içeren adlar (b35e03b), DEF-004 int taşması (838b916, yeni V-09), DEF-005 fikstür dengesi (5af729c, senaryolar yeniden üretildi). Kırmızı commit bf4be97 (run-04, 663/8 fail) → run-05 664/664. Branch %70.8 (araçlar hariç %97.4). requirements v1.2.
 8. ✅ Kısa Türkçe rapor taslağı `docs/report-short.tr.md` (~1.350 kelime, 6 tablo, 3 kod bloğu ≈ 5 sayfa; İngilizcesi ≈ 5–6 sayfa olur). İngilizceyi öğrenci yazacak.
-7. ✅ Türkçe çeviri `docs/report.tr.md` (sadece okuma için; teslim İngilizce). Kontrol artifact'i: https://claude.ai/artifact/LaSP9N711DAh45vbVppmzV (ödev maddeleri, tahmini puan 86/100, savunma kartları, S01–S12 tabloları ve maçları)
+7. ✅ Kontrol artifact'i (senaryo verisi DEF-005 öncesine ait, yeniden yayımlanmadı): https://claude.ai/artifact/LaSP9N711DAh45vbVppmzV (ödev maddeleri, tahmini puan 86/100, savunma kartları, S01–S12 tabloları ve maçları)
 
 ## Öğrenciye kalanlar (teslim öncesi)
-- `docs/report.md`: öğrenci bilgileri dolduruldu (Ozan Serhan Denizhan, 220911758, SWE411, 13.11.2026). Kalan: §2.6 "Java öğrenme zorlukları" (`[STUDENT TO WRITE]`); §5.1 Python oracle cümlesi (onayla/sil); §9 AI kullanım beyanını gözden geçir/uyarla.
 - Raporu gerekirse kısalt (hedef 5–7k kelime idi), Word/PDF'e çevir.
 - Test planı Q1–Q13 çözümlerini ve varsayımları (A-01..A-04) gözden geçir; sözlü savunmaya hazırlan.
 - ~~Teslim tarihini teyit et~~ → 24 Kasım, basılı, teyitli.
-- İngilizce raporu kendi cümlelerinle yaz (`docs/report-short.tr.md` rehber); uzun `docs/report.md` sadece arşiv/kaynak.
+- İngilizce raporu kendi cümlelerinle yaz (`docs/report-short.tr.md` rehber; kişisel değerlendirme ve AI beyanı yer tutucu).
 - "Kendi kodu" şartı: kodun büyük kısmı AI ile yazıldı; hocaya AI kullanımını açıkça beyan et, gerekirse ne kadarına izin verdiğini sor; kodu satır satır anlatabilecek hale gel.
 
 ## Tasarım notları

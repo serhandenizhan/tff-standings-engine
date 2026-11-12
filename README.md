@@ -79,12 +79,11 @@ Kasımpaşa;Çaykur Rizespor;2;2;AWAY
 | Document | Content |
 |---|---|
 | `docs/requirements.md` | Requirements v1.1 with TFF rule sources |
-| `docs/test-plan.md` | Test plan: 133 test cases with expected and actual results |
-| `docs/defect-log.md` | Defects found by testing (DEF-001, DEF-002) |
+| `docs/test-plan.md` | Test plan: 138 test cases with expected and actual results |
+| `docs/defect-log.md` | Defects found by testing and code review (DEF-001..DEF-005) |
 | `docs/coverage-analysis.md` | JaCoCo coverage analysis |
 | `docs/generator.md` | Season generator design and realism check |
 | `docs/data-sources.md` | Real data sources (2016–17..2025–26) |
-| `docs/report.md` | Report draft |
-| `docs/report.tr.md` | Turkish translation of the report (reading copy) |
+| `docs/report-short.tr.md` | Short report outline in Turkish (the English report is written by the student) |
 | `docs/results/` | Stored test runs and coverage report |
 | `docs/ai-usage-log.md` | AI tool usage log |
