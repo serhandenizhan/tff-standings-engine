@@ -1,7 +1,7 @@
 # Test Plan — TFF Standings Engine
 
 > Version 1.1 — 2026-11-12 (section 6 rewritten for the data-driven generator and scenario library; TC-100..TC-134; coverage-gap tests TC-140..TC-154 added). Basis: `docs/requirements.md` v1.1 (FR-01..FR-15, V-01..V-08, A-01..A-04, D-01..D-03) and the TFF rule sources quoted in `CLAUDE.md` (FMT 9/1, 9/2-a, 9/2-b, 23/4, 24/1-a, FDT 33).
-> **Totals:** 133 test cases (TC-001..TC-099 with gaps = 83, TC-100..TC-134 = 35, TC-140..TC-154 = 15); 655 executed JUnit invocations in the full suite (parameterised/repeated cases and sub-variants such as TC-084a..f count separately). Results: see section 7, "Execution summary".
+> **Totals:** 138 test cases (TC-001..TC-099 with gaps = 83, TC-100..TC-134 = 35, TC-140..TC-154 = 15, TC-160..TC-162 = 5 incl. sub-variants); 664 executed JUnit invocations in the full suite (parameterised/repeated cases and sub-variants such as TC-084a..f count separately). Results: see section 7, "Execution summary".
 > All expected results in this plan were derived **by hand from the requirements and the TFF rules**, not from the implementation (black-box). The source code was consulted only for public class / method names.
 
 **Notation used in all test data**
@@ -264,6 +264,7 @@ In all F1–F5: forfeiter gets a loss, 0 points and `hasForfeitLoss() = true`; a
 | V-06 | same fixture twice (different score, with forfeit); three matches between two teams | TC-046, TC-048 |
 | V-07 | deduction 0, −1; deduction for unregistered team; `Beşiktaş;0` in CSV | TC-008, TC-035, TC-089 |
 | V-08 | wrong field counts (teams 2, matches 3/6, deductions 1/3); non-integer numbers; unknown forfeit; missing file — all with file name (+ line number) | TC-084, TC-085, TC-086, TC-090 |
+| V-09 | goal or deduction totals beyond the int range (each value valid, the sum overflows) | TC-161, TC-161b |
 | CLI | 0 / 1 / 4 arguments; missing file; malformed line; invalid data | TC-097, TC-098 |
 
 ---
@@ -343,7 +344,7 @@ In all F1–F5: forfeiter gets a loss, 0 points and `hasForfeitLoss() = true`; a
 
 ## 7. Concrete test cases
 
-Columns: **Tech** = EP (equivalence partition), BVA, DT (decision table rule), NEG (negative), MR/PBT (metamorphic / property). Actual = observed result of the recorded runs (see below). TC-100..TC-134 are specified in section 6 and TC-140..TC-154 in 7.11; their Actual column is in those tables.
+Columns: **Tech** = EP (equivalence partition), BVA, DT (decision table rule), NEG (negative), MR/PBT (metamorphic / property). Actual = observed result of the recorded runs (see below). TC-100..TC-134 are specified in section 6, TC-140..TC-154 in 7.11 and TC-160..TC-162 in 7.12; their Actual column is in those tables.
 
 ### Execution summary
 
@@ -352,6 +353,8 @@ Columns: **Tech** = EP (equivalence partition), BVA, DT (decision table rule), N
 | run-01 (initial) | TC-001..TC-099 | 125 | 122 pass, 3 fail (TC-078, TC-079 failures; TC-087 error) → DEF-001, DEF-002 | [`docs/results/run-01-initial/`](results/run-01-initial/) |
 | run-02 (after fixes) | TC-001..TC-099 | 125 | 125/125 pass | [`docs/results/run-02-after-fixes/`](results/run-02-after-fixes/) |
 | run-03 (full suite) | TC-001..TC-154 | 655 | 655/655 pass, 0 failures, 0 errors | [`docs/results/run-03-full-suite/`](results/run-03-full-suite/) |
+| run-04 (review defects) | TC-001..TC-162 | 663 | 655 pass, 8 fail (TC-160, 160b, 161, 161b, TC-162 ×4) → DEF-003, DEF-004, DEF-005 | [`docs/results/run-04-review-defects/`](results/run-04-review-defects/) |
+| run-05 (after review fixes) | TC-001..TC-162 | 664 | 664/664 pass (one extra catalogue-flag invocation after the scenario library was regenerated) | [`docs/results/run-05-after-review-fixes/`](results/run-05-after-review-fixes/) |
 
 Actual notation: `Pass (run-01)` = passed in the first run; the three defect cases show the wrong output of run-01 and the defect ID (details in [`defect-log.md`](defect-log.md)); `Pass (run-03)` = TC-100 and above, first executed in the full-suite run. Rows TC-001..TC-099 also pass in run-02 and run-03. No TC in the plan is without an implemented test.
 
@@ -513,6 +516,18 @@ White-box tests derived from requirements for gaps found in the JaCoCo report (`
 
 ---
 
+### 7.12 Added after independent code review (2026-11-13) — `ReviewDefectsTest`, `generator/ScheduleBalanceTest`
+
+An independent review (four reviewers: standards, spec, bug hunt, test quality) reported three edge-case defects. Each was first written as a failing test from the requirement, committed red, then fixed.
+
+| ID | Tech | Req | Input | Expected | Why | Actual |
+|---|---|---|---|---|---|---|
+| TC-160 | EP / NEG | V-06 | teams `A\|B`, `C`, `A`, `B\|C`; matches `A\|B`–`C` 1-0, `A`–`B\|C` 2-2 | accepted, 4 rows | EP: names containing the key separator `\|`; different fixtures must not collide | run-04: `Duplicate fixture: A\|B\|C` → DEF-003; Pass after fix (run-05) |
+| TC-160b | EP / NEG | V-06 | same teams; `A\|B`–`C`, `C`–`A\|B`, `A`–`B\|C` | accepted | the pair counter used the same joined key | run-04: `Duplicate fixture: A\|B\|C` → DEF-003; Pass after fix (run-05) |
+| TC-161 | BVA / NEG | V-09, FR-07 | P beats Q 1-0; two deductions of `Integer.MAX_VALUE` for P | `IllegalArgumentException` naming P | BVA at the int limit: each value valid, the sum overflows | run-04: nothing thrown (P showed 5 points) → DEF-004; Pass after fix (run-05) |
+| TC-161b | BVA / NEG | V-09, FR-05 | P–Q `Integer.MAX_VALUE`-0, Q–P 0-1 | `IllegalArgumentException` naming P or Q | goal totals overflow; P's goals are Q's conceded goals, so either can overflow first (assertion corrected, see DEF-004) | run-04: nothing thrown → DEF-004; Pass after fix (run-05) |
+| TC-162 | BVA | generator (fixture balance) | `doubleRoundRobin` with 4, 6, 18, 20 teams | every team ⌊(n−1)/2⌋..⌈(n−1)/2⌉ home games in the first half | the code comment claimed a balanced schedule; mid-season scenarios depend on it; boundaries 0 and n−1 must not occur | run-04: `T1` had 0 home games (all four sizes) → DEF-005; Pass after fix (run-05) |
+
 ## 8. Mapping to JUnit test classes (for parallel implementation)
 
 All under `src/test/java/edu/svv/standings/`. Each test method gets `@DisplayName("TC-xxx – short text")`.
@@ -538,9 +553,11 @@ All under `src/test/java/edu/svv/standings/`. Each test method gets `@DisplayNam
 | `cli/CoverageGapTest` | TC-140..TC-143 | 4 | added after coverage analysis |
 | `io/CoverageGapTest` | TC-144..TC-147 | 4 | added after coverage analysis |
 | `generator/CoverageGapTest` | TC-148..TC-154 | 7 | added after coverage analysis |
-| **Total** | | **133** | |
+| `ReviewDefectsTest` | TC-160, 160b, 161, 161b | 4 | added after code review (DEF-003, DEF-004) |
+| `generator/ScheduleBalanceTest` | TC-162 | 1 | added after code review (DEF-005) |
+| **Total** | | **138** | |
 
-Executed JUnit invocations across these 133 TCs in the full suite (run-03): **655** (the 133 TCs expand through `@ParameterizedTest` data rows (e.g. 12 library scenarios + random seeds) and sub-variants such as TC-084a..f).
+Executed JUnit invocations across these 138 TCs in the full suite (run-05): **664** (the 133 TCs expand through `@ParameterizedTest` data rows (e.g. 12 library scenarios + random seeds) and sub-variants such as TC-084a..f).
 
 Shared fixture suggestion: a tiny test helper `Leagues` (test scope) with `team(String)`, `m("A","B",2,1)`, `m("A","B",2,1,Forfeit.HOME)` to keep fixtures readable and identical to this plan.
 
@@ -554,7 +571,8 @@ Shared fixture suggestion: a tiny test helper `Leagues` (test scope) with `team(
 | Negative | 002, 005, 006, 007, 009, 035, 040, 041, 042, 044, 046, 048, 084, 085, 086, 088, 090, 097, 098 | 19 |
 | Property-based / metamorphic / generator | 100..134 | 35 |
 | White-box coverage-gap tests | 140..154 | 15 |
-| **Total** | | **133** |
+| Review-defect tests (EP/BVA/NEG) | 160, 160b, 161, 161b, 162 | 5 |
+| **Total** | | **138** |
 
 (Many TCs carry a secondary technique, shown in the Tech column; e.g. TC-050/051/054/055 are also BVA rows, TC-005/048/084 are also BVA.)
 
@@ -570,7 +588,7 @@ Shared fixture suggestion: a tiny test helper `Leagues` (test scope) with `team(
 | FR-04 | TC-010, TC-011, TC-012, TC-101 |
 | FR-05 | TC-010, TC-012, TC-013, TC-100, TC-101, TC-129 |
 | FR-06 | TC-020, TC-021, TC-022, TC-023, TC-024, TC-056, TC-058, TC-070, TC-077, TC-101, TC-106 |
-| FR-07 | TC-030, TC-031, TC-032, TC-033, TC-034, TC-096, TC-101, TC-107 |
+| FR-07 | TC-030, TC-031, TC-032, TC-033, TC-034, TC-096, TC-101, TC-107, TC-161 |
 | FR-08 | TC-012, TC-014, TC-061, TC-102, TC-109 |
 | FR-09 | TC-024, TC-050..TC-061, TC-074, TC-106 |
 | FR-10 | TC-065..TC-077 |
@@ -584,9 +602,10 @@ Shared fixture suggestion: a tiny test helper `Leagues` (test scope) with `team(
 | V-03 | TC-044, TC-045, TC-098 |
 | V-04 | TC-006 |
 | V-05 | TC-005, TC-088 |
-| V-06 | TC-046, TC-048, TC-113, TC-143 |
+| V-06 | TC-046, TC-048, TC-113, TC-143, TC-160, TC-160b |
 | V-07 | TC-008, TC-035, TC-089 |
 | V-08 | TC-084, TC-085, TC-086, TC-088, TC-090, TC-098, TC-144..TC-147 |
+| V-09 | TC-161, TC-161b |
 | A-01 | all GD assertions (TC-010, TC-012, TC-101) |
 | A-02 | TC-034, TC-107 |
 | A-03 | TC-013, TC-015, TC-060, TC-075 |

@@ -90,6 +90,90 @@ by reading `split` and `parseMatches` before the change; no other code path touc
 
 ---
 
+## DEF-003: Team names containing `|` cause false "Duplicate fixture" errors
+
+| Field | Value |
+|---|---|
+| ID | DEF-003 |
+| Detected by | Independent code review (bug-hunt reviewer, 2026-11-13), confirmed by TC-160 and TC-160b (`ReviewDefectsTest`); equivalence class "team names containing the key separator" |
+| Date | 2026-11-13 |
+| Severity | Medium-Low: valid input is rejected, no table is produced; needs a `|` in a club name, which is unusual but allowed by FR-01/FR-14 |
+| Priority | P3 |
+| Requirement violated | V-06 (only a real duplicate fixture or a third match may be rejected), FR-02 |
+| Status | Closed — fixed and verified by run-05-after-review-fixes |
+
+**Steps to reproduce.** Teams `A|B`, `C`, `A`, `B|C`; matches `A|B`–`C` 1-0 and `A`–`B|C` 2-2.
+
+**Expected.** Both matches accepted (they are different fixtures).
+
+**Actual (verbatim, run-04).**
+
+```
+ReviewDefectsTest.tc160_pipeInNamesIsNotDuplicateFixture:30 Unexpected exception thrown: java.lang.IllegalArgumentException: Duplicate fixture: A|B|C
+```
+
+**Root cause.** `StandingsCalculator.validateMatches` built the fixture key as `home.name() + "|" + away.name()` and the pair key the same way. Both fixtures above produce the string `A|B|C`, so the second is reported as a duplicate. The pair counter had the same collision.
+
+**Fix.** Keys are built from the `Team` values themselves: `List.of(home, away)` for a fixture and `Set.of(home, away)` for an unordered pair. `Team` is a record, so equality is by the trimmed name and no separator is needed. The string-building `pairKey` method was removed. Fix commit: `b35e03b`.
+
+---
+
+## DEF-004: Goal and deduction totals overflow `int` silently
+
+| Field | Value |
+|---|---|
+| ID | DEF-004 |
+| Detected by | Independent code review (bug-hunt reviewer), confirmed by TC-161 and TC-161b (`ReviewDefectsTest`); boundary value analysis at `Integer.MAX_VALUE` |
+| Date | 2026-11-13 |
+| Severity | Low: needs absurd values, but the output is silently wrong (a heavily penalised team shows positive points) |
+| Priority | P3 |
+| Requirement violated | FR-05/FR-07 (totals must be correct); the general rule that invalid input is rejected with a clear message. New rule V-09 added in requirements v1.2 |
+| Status | Closed — fixed and verified by run-05-after-review-fixes |
+
+**Steps to reproduce.** P beats Q 1-0; two deductions of 2 147 483 647 points for P.
+
+**Expected.** Input rejected with a message naming P (an exact negative total cannot be stored in `int`).
+
+**Actual (run-04).** No exception; P's points were shown as **5**, because `deductedPoints += points` wrapped around. Goals behaved the same way (`Integer.MAX_VALUE` goals plus 1 gave −2 147 483 648).
+
+**Root cause.** `StandingRow.addMatch` and `addDeduction` used plain `int` addition.
+
+**Fix.** `Math.addExact` for goals for, goals against and deductions; an `ArithmeticException` is turned into `IllegalArgumentException("... out of range for team <name>")`. Fix commit: `838b916`.
+
+**Test correction (recorded honestly).** TC-161b originally asserted that the message names P. Every goal P scores is conceded by Q, so Q's goals-against total overflows as well, and Q is processed first in that input. The assertion was relaxed to "names P or Q" in the fix commit. The test still fails on the unfixed code (nothing was thrown), so the correction does not hide the defect.
+
+---
+
+## DEF-005: Round-robin schedule is not balanced (some teams play 0 home games in the first half)
+
+| Field | Value |
+|---|---|
+| ID | DEF-005 |
+| Detected by | Independent code review (bug-hunt reviewer), confirmed by TC-162 (`generator/ScheduleBalanceTest`) for 4, 6, 18 and 20 teams |
+| Date | 2026-11-13 |
+| Severity | Low: affects only the test-data generator; full seasons are still 17/17 home/away, but mid-season scenarios (S06–S12) were biased |
+| Priority | P3 |
+| Requirement violated | The generator's own documented contract (code comment "dengeli" = balanced) and the student's decision that generated seasons are realistic (CLAUDE.md) |
+| Status | Closed — fixed and verified by run-05-after-review-fixes |
+
+**Steps to reproduce.** `SeasonGenerator.doubleRoundRobin` with 18 teams; count home games per team in rounds 1–17.
+
+**Expected.** 8 or 9 home games per team.
+
+**Actual (verbatim, run-04).**
+
+```
+ScheduleBalanceTest.tc162_firstHalfHomeGamesBalanced:40 T1 ilk devrede 0 iç saha maçı oynuyor, beklenen 8..9
+```
+
+Counts ranged from 0 to 16.
+
+**Root cause.** The circle method rotates every team except the first. The home rule `(round + slot) % 2 == 0` moved together with the rotation, so the team that started in slot 1 stayed on the "away" side in every round.
+
+**Fix.** For non-fixed slots the home side depends on slot parity only (`slot % 2 == 1`); the fixed team still alternates by round. A simulation for 2–40 teams confirmed ⌊(n−1)/2⌋..⌈(n−1)/2⌉ home games for every team. Because library scenarios are generator output, the scenario library S01–S12 was regenerated with `ScenarioLibraryBuilder` (new seeds, same twelve selection rules; catalogue in `src/main/resources/scenarios/catalogue.csv`). Fix commit: `5af729c`.
+
+---
+
 ## Notes
 
 - **How DEF-001 was found.** DEF-001 was first suspected during code review of the first code version; the suspicion
@@ -98,7 +182,8 @@ by reading `split` and `parseMatches` before the change; no other code path touc
   equivalence class "names with Turkish letters". DEF-002 was not suspected beforehand; it was found by TC-087 alone,
   which exists because the test plan listed the empty fifth field as an ambiguity (Q9) and resolved it before testing.
 - Three test invocations failed but they belong to two defects (TC-078 and TC-079 share DEF-001).
-- No test was changed to make it pass; both defects were fixed in the production code. The tests were correct.
+- **DEF-003..DEF-005 were found by an independent code review** (four reviewers working separately: standards, spec, bug hunt, test quality) after the full suite was green. The original black-box plan had no equivalence class for a separator character in names, no boundary at the `int` limit and no balance property for the schedule. Each defect was first written as a failing test (red commit `bf4be97`, run-04: 663 invocations, 8 failing), then fixed in its own commit, then the full suite was rerun (run-05: 664/664).
+- For DEF-001..DEF-003 and DEF-005 no test was changed; the production code was fixed. For DEF-004 one assertion message check was corrected (see DEF-004).
 
 ## Observations that are not defects
 

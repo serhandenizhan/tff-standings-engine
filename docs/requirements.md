@@ -1,6 +1,6 @@
 # Requirements Specification — TFF Standings Engine
 
-> Status: **v1.1** — approved by student (2026-11-12). v1.1 adds CSV/CLI input (FR-14, FR-15, V-08).
+> Status: **v1.2** (2026-11-13). v1.1 (approved 2026-11-12) added CSV/CLI input (FR-14, FR-15, V-08). v1.2 adds V-09 (numeric overflow, from DEF-004) and records the season generator / `--scenario` option decided in CLAUDE.md.
 > Sources: 2026–27 Süper Lig Müsabakaları Statüsü (SLS), TFF Futbol Müsabaka Talimatı (FMT), TFF Futbol Disiplin Talimatı (FDT).
 
 ## 1. Scope
@@ -47,6 +47,7 @@ A Java application that takes a list of teams, played match results and point de
 | V-06 | Duplicate fixture (same home/away pair twice) or more than two matches between two teams |
 | V-07 | Point deduction of zero or negative points, or for an unregistered team |
 | V-08 | Malformed CSV line (wrong field count, non-integer number, unknown forfeit value) or missing file — rejected with file name and line number |
+| V-09 | Goal or deduction totals that would exceed the `int` range are rejected with a message naming the team (added after DEF-004) |
 
 ## 5. Assumptions
 
@@ -70,4 +71,4 @@ A Java application that takes a list of teams, played match results and point de
 |---|---|---|
 | D-01 | Are team names compared case-sensitively? | Exact match after trimming. |
 | D-02 | How are unresolved teams listed? | Consecutive positions, alphabetical order for display only, flagged. |
-| D-03 | How is data entered? | CSV files + command-line front end (FR-14, FR-15). No fixture generation; only played results. |
+| D-03 | How is data entered? | CSV files + command-line front end (FR-14, FR-15). The standings library itself takes only played results. Separately, a test-data season generator (realistic random seasons from 10 real seasons, 12 pre-generated scenarios S01–S12, CLI `--scenario <id\|random> [seed]`) was added by student decision on 2026-11-12; see `docs/generator.md`. |

@@ -84,70 +84,65 @@ import java.util.Set;
     }
 
     private void validateMatches(List&lt;MatchResult&gt; matches, Map&lt;Team, StandingRow&gt; rows) {
-<span class="fc" id="L87">        Set&lt;String&gt; fixtures = new HashSet&lt;&gt;();</span>
-<span class="fc" id="L88">        Map&lt;String, Integer&gt; pairCounts = new HashMap&lt;&gt;();</span>
+        // DEF-003: anahtarlar isim birleştirmek yerine Team nesnelerinden kurulur; &quot;|&quot; içeren adlar çakışmaz
+<span class="fc" id="L88">        Set&lt;List&lt;Team&gt;&gt; fixtures = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L89">        Map&lt;Set&lt;Team&gt;, Integer&gt; pairCounts = new HashMap&lt;&gt;();</span>
 
-<span class="fc bfc" id="L90" title="All 2 branches covered.">        for (MatchResult match : matches) {</span>
-<span class="fc bfc" id="L91" title="All 2 branches covered.">            if (match == null) {</span>
-<span class="fc" id="L92">                throw new IllegalArgumentException(&quot;Match must not be null&quot;);</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">        for (MatchResult match : matches) {</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">            if (match == null) {</span>
+<span class="fc" id="L93">                throw new IllegalArgumentException(&quot;Match must not be null&quot;);</span>
             }
             // V-03: maçtaki takımlar kayıtlı olmalı
-<span class="fc bfc" id="L95" title="All 4 branches covered.">            if (!rows.containsKey(match.homeTeam()) || !rows.containsKey(match.awayTeam())) {</span>
-<span class="fc" id="L96">                throw new IllegalArgumentException(&quot;Match references an unknown team: &quot;</span>
-<span class="fc" id="L97">                        + match.homeTeam().name() + &quot; - &quot; + match.awayTeam().name());</span>
+<span class="fc bfc" id="L96" title="All 4 branches covered.">            if (!rows.containsKey(match.homeTeam()) || !rows.containsKey(match.awayTeam())) {</span>
+<span class="fc" id="L97">                throw new IllegalArgumentException(&quot;Match references an unknown team: &quot;</span>
+<span class="fc" id="L98">                        + match.homeTeam().name() + &quot; - &quot; + match.awayTeam().name());</span>
             }
 
             // V-06: aynı ev sahibi/deplasman eşleşmesi bir kez oynanır
-<span class="fc" id="L101">            String fixture = match.homeTeam().name() + &quot;|&quot; + match.awayTeam().name();</span>
-<span class="fc bfc" id="L102" title="All 2 branches covered.">            if (!fixtures.add(fixture)) {</span>
-<span class="fc" id="L103">                throw new IllegalArgumentException(&quot;Duplicate fixture: &quot; + fixture);</span>
+<span class="fc" id="L102">            List&lt;Team&gt; fixture = List.of(match.homeTeam(), match.awayTeam());</span>
+<span class="fc bfc" id="L103" title="All 2 branches covered.">            if (!fixtures.add(fixture)) {</span>
+<span class="fc" id="L104">                throw new IllegalArgumentException(&quot;Duplicate fixture: &quot;</span>
+<span class="fc" id="L105">                        + match.homeTeam().name() + &quot; - &quot; + match.awayTeam().name());</span>
             }
 
-            // V-06: iki takım arasında en fazla iki maç olabilir
-<span class="fc" id="L107">            String pair = pairKey(match.homeTeam(), match.awayTeam());</span>
-<span class="fc" id="L108">            int count = pairCounts.getOrDefault(pair, 0) + 1;</span>
-<span class="pc bpc" id="L109" title="1 of 2 branches missed.">            if (count &gt; 2) {</span>
-<span class="nc" id="L110">                throw new IllegalArgumentException(&quot;More than two matches between &quot; + pair);</span>
+            // V-06: iki takım arasında en fazla iki maç olabilir (Set: eşleşme yönünden bağımsız anahtar)
+<span class="fc" id="L109">            Set&lt;Team&gt; pair = Set.of(match.homeTeam(), match.awayTeam());</span>
+<span class="fc" id="L110">            int count = pairCounts.getOrDefault(pair, 0) + 1;</span>
+<span class="pc bpc" id="L111" title="1 of 2 branches missed.">            if (count &gt; 2) {</span>
+<span class="nc" id="L112">                throw new IllegalArgumentException(&quot;More than two matches between &quot;</span>
+<span class="nc" id="L113">                        + match.homeTeam().name() + &quot; and &quot; + match.awayTeam().name());</span>
             }
-<span class="fc" id="L112">            pairCounts.put(pair, count);</span>
-<span class="fc" id="L113">        }</span>
-<span class="fc" id="L114">    }</span>
-
-    private String pairKey(Team a, Team b) {
-        // eşleşme yönünden bağımsız anahtar: isimler alfabetik sırayla
-<span class="fc bfc" id="L118" title="All 2 branches covered.">        if (a.name().compareTo(b.name()) &lt; 0) {</span>
-<span class="fc" id="L119">            return a.name() + &quot;|&quot; + b.name();</span>
-        }
-<span class="fc" id="L121">        return b.name() + &quot;|&quot; + a.name();</span>
-    }
+<span class="fc" id="L115">            pairCounts.put(pair, count);</span>
+<span class="fc" id="L116">        }</span>
+<span class="fc" id="L117">    }</span>
 
     private void applyMatch(MatchResult match, Map&lt;Team, StandingRow&gt; rows) {
-<span class="fc" id="L125">        int homeGoals = adjustedHomeGoals(match);</span>
-<span class="fc" id="L126">        int awayGoals = adjustedAwayGoals(match);</span>
+<span class="fc" id="L120">        int homeGoals = adjustedHomeGoals(match);</span>
+<span class="fc" id="L121">        int awayGoals = adjustedAwayGoals(match);</span>
 
-<span class="fc bfc" id="L128" title="All 2 branches covered.">        rows.get(match.homeTeam()).addMatch(homeGoals, awayGoals, match.forfeit() == Forfeit.HOME);</span>
-<span class="fc bfc" id="L129" title="All 2 branches covered.">        rows.get(match.awayTeam()).addMatch(awayGoals, homeGoals, match.forfeit() == Forfeit.AWAY);</span>
-<span class="fc" id="L130">    }</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">        rows.get(match.homeTeam()).addMatch(homeGoals, awayGoals, match.forfeit() == Forfeit.HOME);</span>
+<span class="fc bfc" id="L124" title="All 2 branches covered.">        rows.get(match.awayTeam()).addMatch(awayGoals, homeGoals, match.forfeit() == Forfeit.AWAY);</span>
+<span class="fc" id="L125">    }</span>
 
     // FR-06 / FMT 23/4: hükmen yenilen tarafın golleri geçersiz, galibe en az 3 gol
     static int adjustedHomeGoals(MatchResult match) {
-<span class="fc bfc" id="L134" title="All 2 branches covered.">        if (match.forfeit() == Forfeit.HOME) {</span>
-<span class="fc" id="L135">            return 0;</span>
+<span class="fc bfc" id="L129" title="All 2 branches covered.">        if (match.forfeit() == Forfeit.HOME) {</span>
+<span class="fc" id="L130">            return 0;</span>
         }
-<span class="fc bfc" id="L137" title="All 2 branches covered.">        if (match.forfeit() == Forfeit.AWAY) {</span>
-<span class="fc" id="L138">            return Math.max(3, match.homeGoals());</span>
+<span class="fc bfc" id="L132" title="All 2 branches covered.">        if (match.forfeit() == Forfeit.AWAY) {</span>
+<span class="fc" id="L133">            return Math.max(3, match.homeGoals());</span>
         }
-<span class="fc" id="L140">        return match.homeGoals();</span>
+<span class="fc" id="L135">        return match.homeGoals();</span>
     }
 
     static int adjustedAwayGoals(MatchResult match) {
-<span class="fc bfc" id="L144" title="All 2 branches covered.">        if (match.forfeit() == Forfeit.AWAY) {</span>
-<span class="fc" id="L145">            return 0;</span>
+<span class="fc bfc" id="L139" title="All 2 branches covered.">        if (match.forfeit() == Forfeit.AWAY) {</span>
+<span class="fc" id="L140">            return 0;</span>
         }
-<span class="fc bfc" id="L147" title="All 2 branches covered.">        if (match.forfeit() == Forfeit.HOME) {</span>
-<span class="fc" id="L148">            return Math.max(3, match.awayGoals());</span>
+<span class="fc bfc" id="L142" title="All 2 branches covered.">        if (match.forfeit() == Forfeit.HOME) {</span>
+<span class="fc" id="L143">            return Math.max(3, match.awayGoals());</span>
         }
-<span class="fc" id="L150">        return match.awayGoals();</span>
+<span class="fc" id="L145">        return match.awayGoals();</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

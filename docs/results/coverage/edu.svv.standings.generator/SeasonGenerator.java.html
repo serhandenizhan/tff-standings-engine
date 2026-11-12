@@ -128,7 +128,7 @@ public final class SeasonGenerator {
     /**
      * Daire yöntemiyle çift devreli fikstür. İlk takım sabit kalır, diğerleri her hafta bir adım döner.
      * İlk devrede her çift bir kez karşılaşır; ikinci devre aynı haftalar ev/deplasman değiştirilmiş hâlidir.
-     * Ev sahibi seçimi basit bir parite kuralıyla yapılır (dengeli ama &quot;break&quot; optimizasyonu yok; varsayım: yeterli).
+     * Ev sahibi seçimi konum paritesiyle yapılır: ilk devrede her takımın iç saha sayısı dengelidir (DEF-005); &quot;break&quot; optimizasyonu yok.
      *
      * @param order takımlar (çift sayıda); sıra fikstürü belirler
      * @return 2·(n−1) hafta, her hafta n/2 maç
@@ -145,36 +145,38 @@ public final class SeasonGenerator {
 <span class="fc bfc" id="L145" title="All 2 branches covered.">            for (int i = 0; i &lt; n / 2; i++) {</span>
 <span class="fc" id="L146">                Team a = ring.get(i);</span>
 <span class="fc" id="L147">                Team b = ring.get(n - 1 - i);</span>
-                // sabit takım haftadan haftaya ev/deplasman değiştirir; diğer çiftlerde hafta + konum paritesi
-<span class="fc bfc" id="L149" title="All 6 branches covered.">                boolean aHome = (i == 0) ? (r % 2 == 0) : ((r + i) % 2 == 0);</span>
-<span class="fc bfc" id="L150" title="All 2 branches covered.">                round.add(aHome ? new Fixture(a, b) : new Fixture(b, a));</span>
+                // sabit takım haftadan haftaya ev/deplasman değiştirir.
+                // DEF-005: eski kural (hafta + konum paritesi) dönen halkada bir takımı ilk devrede hep deplasmana
+                // bırakıyordu (0..16 iç saha). Konum paritesi tek başına kullanılınca her takım ⌊(n−1)/2⌋..⌈(n−1)/2⌉ iç saha oynar.
+<span class="fc bfc" id="L151" title="All 6 branches covered.">                boolean aHome = (i == 0) ? (r % 2 == 0) : (i % 2 == 1);</span>
+<span class="fc bfc" id="L152" title="All 2 branches covered.">                round.add(aHome ? new Fixture(a, b) : new Fixture(b, a));</span>
             }
-<span class="fc" id="L152">            firstHalf.add(round);</span>
+<span class="fc" id="L154">            firstHalf.add(round);</span>
             // döndürme: son eleman 1. konuma geçer, 0. konum sabit
-<span class="fc" id="L154">            ring.add(1, ring.remove(n - 1));</span>
+<span class="fc" id="L156">            ring.add(1, ring.remove(n - 1));</span>
         }
-<span class="fc" id="L156">        List&lt;List&lt;Fixture&gt;&gt; all = new ArrayList&lt;&gt;(firstHalf);</span>
-<span class="fc bfc" id="L157" title="All 2 branches covered.">        for (List&lt;Fixture&gt; round : firstHalf) {</span>
-<span class="fc" id="L158">            all.add(round.stream().map(f -&gt; new Fixture(f.away(), f.home())).toList());</span>
-<span class="fc" id="L159">        }</span>
-<span class="fc" id="L160">        return all;</span>
+<span class="fc" id="L158">        List&lt;List&lt;Fixture&gt;&gt; all = new ArrayList&lt;&gt;(firstHalf);</span>
+<span class="fc bfc" id="L159" title="All 2 branches covered.">        for (List&lt;Fixture&gt; round : firstHalf) {</span>
+<span class="fc" id="L160">            all.add(round.stream().map(f -&gt; new Fixture(f.away(), f.home())).toList());</span>
+<span class="fc" id="L161">        }</span>
+<span class="fc" id="L162">        return all;</span>
     }
 
     private MatchResult playMatch(Fixture f, Random random) {
-<span class="fc" id="L164">        double mu = model.leagueMeanGoals();</span>
-<span class="fc" id="L165">        TeamStrength home = model.strengthOf(f.home().name());</span>
-<span class="fc" id="L166">        TeamStrength away = model.strengthOf(f.away().name());</span>
+<span class="fc" id="L166">        double mu = model.leagueMeanGoals();</span>
+<span class="fc" id="L167">        TeamStrength home = model.strengthOf(f.home().name());</span>
+<span class="fc" id="L168">        TeamStrength away = model.strengthOf(f.away().name());</span>
         // μ·(hücum/μ)·(savunma/μ) = hücum·savunma/μ
-<span class="fc" id="L168">        double lambdaHome = home.attack() * away.defence() / mu * HOME_ADVANTAGE;</span>
-<span class="fc" id="L169">        double lambdaAway = away.attack() * home.defence() / mu / HOME_ADVANTAGE;</span>
-<span class="fc" id="L170">        int homeGoals = poisson(lambdaHome, random);</span>
-<span class="fc" id="L171">        int awayGoals = poisson(lambdaAway, random);</span>
+<span class="fc" id="L170">        double lambdaHome = home.attack() * away.defence() / mu * HOME_ADVANTAGE;</span>
+<span class="fc" id="L171">        double lambdaAway = away.attack() * home.defence() / mu / HOME_ADVANTAGE;</span>
+<span class="fc" id="L172">        int homeGoals = poisson(lambdaHome, random);</span>
+<span class="fc" id="L173">        int awayGoals = poisson(lambdaAway, random);</span>
 
-<span class="fc" id="L173">        Forfeit forfeit = Forfeit.NONE;</span>
-<span class="fc bfc" id="L174" title="All 2 branches covered.">        if (random.nextDouble() &lt; FORFEIT_PROBABILITY) {</span>
-<span class="fc bfc" id="L175" title="All 2 branches covered.">            forfeit = random.nextBoolean() ? Forfeit.HOME : Forfeit.AWAY;</span>
+<span class="fc" id="L175">        Forfeit forfeit = Forfeit.NONE;</span>
+<span class="fc bfc" id="L176" title="All 2 branches covered.">        if (random.nextDouble() &lt; FORFEIT_PROBABILITY) {</span>
+<span class="fc bfc" id="L177" title="All 2 branches covered.">            forfeit = random.nextBoolean() ? Forfeit.HOME : Forfeit.AWAY;</span>
         }
-<span class="fc" id="L177">        return new MatchResult(f.home(), f.away(), homeGoals, awayGoals, forfeit);</span>
+<span class="fc" id="L179">        return new MatchResult(f.home(), f.away(), homeGoals, awayGoals, forfeit);</span>
     }
 
     /**
@@ -182,17 +184,17 @@ public final class SeasonGenerator {
      * λ burada en fazla ~4 olduğu için yöntem hem doğru hem yeterince hızlıdır.
      */
     static int poisson(double lambda, Random random) {
-<span class="fc bfc" id="L185" title="All 2 branches covered.">        if (lambda &lt;= 0) {</span>
-<span class="fc" id="L186">            throw new IllegalArgumentException(&quot;lambda must be positive: &quot; + lambda);</span>
+<span class="fc bfc" id="L187" title="All 2 branches covered.">        if (lambda &lt;= 0) {</span>
+<span class="fc" id="L188">            throw new IllegalArgumentException(&quot;lambda must be positive: &quot; + lambda);</span>
         }
-<span class="fc" id="L188">        double limit = Math.exp(-lambda);</span>
-<span class="fc" id="L189">        double product = random.nextDouble();</span>
-<span class="fc" id="L190">        int k = 0;</span>
-<span class="fc bfc" id="L191" title="All 2 branches covered.">        while (product &gt; limit) {</span>
-<span class="fc" id="L192">            k++;</span>
-<span class="fc" id="L193">            product *= random.nextDouble();</span>
+<span class="fc" id="L190">        double limit = Math.exp(-lambda);</span>
+<span class="fc" id="L191">        double product = random.nextDouble();</span>
+<span class="fc" id="L192">        int k = 0;</span>
+<span class="fc bfc" id="L193" title="All 2 branches covered.">        while (product &gt; limit) {</span>
+<span class="fc" id="L194">            k++;</span>
+<span class="fc" id="L195">            product *= random.nextDouble();</span>
         }
-<span class="fc" id="L195">        return k;</span>
+<span class="fc" id="L197">        return k;</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

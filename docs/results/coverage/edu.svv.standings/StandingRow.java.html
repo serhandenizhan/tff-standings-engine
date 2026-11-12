@@ -27,90 +27,100 @@ public class StandingRow {
     /** Bir maçın sonucunu satıra işler (goller hükmen düzeltmesi yapılmış olmalı). */
     void addMatch(int scored, int conceded, boolean lostByForfeit) {
 <span class="fc" id="L29">        played++;</span>
-<span class="fc" id="L30">        goalsFor += scored;</span>
-<span class="fc" id="L31">        goalsAgainst += conceded;</span>
-<span class="fc bfc" id="L32" title="All 2 branches covered.">        if (scored &gt; conceded) {</span>
-<span class="fc" id="L33">            won++;</span>
-<span class="fc bfc" id="L34" title="All 2 branches covered.">        } else if (scored == conceded) {</span>
-<span class="fc" id="L35">            drawn++;</span>
+        // DEF-004: toplam int aralığını aşarsa sessizce negatife dönmek yerine girdi reddedilir (V-09)
+        try {
+<span class="fc" id="L32">            goalsFor = Math.addExact(goalsFor, scored);</span>
+<span class="fc" id="L33">            goalsAgainst = Math.addExact(goalsAgainst, conceded);</span>
+<span class="fc" id="L34">        } catch (ArithmeticException e) {</span>
+<span class="fc" id="L35">            throw new IllegalArgumentException(&quot;Goal total out of range for team &quot; + team.name(), e);</span>
+<span class="fc" id="L36">        }</span>
+<span class="fc bfc" id="L37" title="All 2 branches covered.">        if (scored &gt; conceded) {</span>
+<span class="fc" id="L38">            won++;</span>
+<span class="fc bfc" id="L39" title="All 2 branches covered.">        } else if (scored == conceded) {</span>
+<span class="fc" id="L40">            drawn++;</span>
         } else {
-<span class="fc" id="L37">            lost++;</span>
+<span class="fc" id="L42">            lost++;</span>
         }
-<span class="fc bfc" id="L39" title="All 2 branches covered.">        if (lostByForfeit) {</span>
-<span class="fc" id="L40">            forfeitLosses++;</span>
+<span class="fc bfc" id="L44" title="All 2 branches covered.">        if (lostByForfeit) {</span>
+<span class="fc" id="L45">            forfeitLosses++;</span>
         }
-<span class="fc" id="L42">    }</span>
+<span class="fc" id="L47">    }</span>
 
     void addDeduction(int points) {
-<span class="fc" id="L45">        deductedPoints += points;</span>
-<span class="fc" id="L46">    }</span>
+        // DEF-004: biriken silme int aralığını aşarsa puan pozitife dönüyordu; artık reddedilir (V-09)
+        try {
+<span class="fc" id="L52">            deductedPoints = Math.addExact(deductedPoints, points);</span>
+<span class="fc" id="L53">        } catch (ArithmeticException e) {</span>
+<span class="fc" id="L54">            throw new IllegalArgumentException(&quot;Deducted points out of range for team &quot; + team.name(), e);</span>
+<span class="fc" id="L55">        }</span>
+<span class="fc" id="L56">    }</span>
 
     void setPosition(int position) {
-<span class="fc" id="L49">        this.position = position;</span>
-<span class="fc" id="L50">    }</span>
+<span class="fc" id="L59">        this.position = position;</span>
+<span class="fc" id="L60">    }</span>
 
     void setUnresolved(boolean unresolved) {
-<span class="fc" id="L53">        this.unresolved = unresolved;</span>
-<span class="fc" id="L54">    }</span>
+<span class="fc" id="L63">        this.unresolved = unresolved;</span>
+<span class="fc" id="L64">    }</span>
 
     public Team getTeam() {
-<span class="fc" id="L57">        return team;</span>
+<span class="fc" id="L67">        return team;</span>
     }
 
     public int getPlayed() {
-<span class="fc" id="L61">        return played;</span>
+<span class="fc" id="L71">        return played;</span>
     }
 
     public int getWon() {
-<span class="fc" id="L65">        return won;</span>
+<span class="fc" id="L75">        return won;</span>
     }
 
     public int getDrawn() {
-<span class="fc" id="L69">        return drawn;</span>
+<span class="fc" id="L79">        return drawn;</span>
     }
 
     public int getLost() {
-<span class="fc" id="L73">        return lost;</span>
+<span class="fc" id="L83">        return lost;</span>
     }
 
     public int getGoalsFor() {
-<span class="fc" id="L77">        return goalsFor;</span>
+<span class="fc" id="L87">        return goalsFor;</span>
     }
 
     public int getGoalsAgainst() {
-<span class="fc" id="L81">        return goalsAgainst;</span>
+<span class="fc" id="L91">        return goalsAgainst;</span>
     }
 
     // A-01: averaj = atılan - yenilen
     public int getGoalDifference() {
-<span class="fc" id="L86">        return goalsFor - goalsAgainst;</span>
+<span class="fc" id="L96">        return goalsFor - goalsAgainst;</span>
     }
 
     public int getDeductedPoints() {
-<span class="fc" id="L90">        return deductedPoints;</span>
+<span class="fc" id="L100">        return deductedPoints;</span>
     }
 
     // FMT 9/1: galibiyet 3, beraberlik 1; FR-07: silinen puan düşülür, negatif olabilir
     public int getPoints() {
-<span class="fc" id="L95">        return won * 3 + drawn - deductedPoints;</span>
+<span class="fc" id="L105">        return won * 3 + drawn - deductedPoints;</span>
     }
 
     public boolean hasForfeitLoss() {
-<span class="fc bfc" id="L99" title="All 2 branches covered.">        return forfeitLosses &gt; 0;</span>
+<span class="fc bfc" id="L109" title="All 2 branches covered.">        return forfeitLosses &gt; 0;</span>
     }
 
     public int getPosition() {
-<span class="fc" id="L103">        return position;</span>
+<span class="fc" id="L113">        return position;</span>
     }
 
     public boolean isUnresolved() {
-<span class="fc" id="L107">        return unresolved;</span>
+<span class="fc" id="L117">        return unresolved;</span>
     }
 
     @Override
     public String toString() {
-<span class="fc" id="L112">        return position + &quot;. &quot; + team.name() + &quot; &quot; + played + &quot; &quot; + won + &quot; &quot; + drawn + &quot; &quot; + lost</span>
-<span class="fc" id="L113">                + &quot; &quot; + goalsFor + &quot;:&quot; + goalsAgainst + &quot; &quot; + getPoints();</span>
+<span class="fc" id="L122">        return position + &quot;. &quot; + team.name() + &quot; &quot; + played + &quot; &quot; + won + &quot; &quot; + drawn + &quot; &quot; + lost</span>
+<span class="fc" id="L123">                + &quot; &quot; + goalsFor + &quot;:&quot; + goalsAgainst + &quot; &quot; + getPoints();</span>
     }
 }
 </pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

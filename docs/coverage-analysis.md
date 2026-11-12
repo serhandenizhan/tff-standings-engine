@@ -5,6 +5,8 @@ Tool: JaCoCo 0.8.13 (`mvn clean verify`, report in `docs/results/coverage/`, sur
 (640 test executions, all passing). "After" = the same suite plus the coverage-gap tests TC-140..TC-154 (655 executions,
 all passing). Paths in the stored results use `~` instead of the home directory.
 
+> **Update 2026-11-13 (after DEF-003..DEF-005, run-05, 664 invocations).** The string-building `pairKey` method was removed (DEF-003) and overflow checks were added (DEF-004), so totals moved slightly: instruction 66.2 % (3160/4770), **branch 70.8 % (267/377)**, line 71.8 % (587/818), method 87.7 % (107/122); excluding the two offline tools: instruction 96.6 %, **branch 97.4 % (267/274)**, line 95.3 %, method 98.2 %. The tables below are the 2026-11-12 measurement; the current HTML report is in `docs/results/coverage/`. The V-06 pair-count branch is still unreachable (now via the `Set`-based key). The new `addExact` catch blocks are covered by TC-161/TC-161b.
+
 ## 1. Overall result
 
 | Metric | Before | After |

@@ -11,7 +11,7 @@ tff-standings-engine,edu.svv.standings.generator,StrengthModel,12,421,1,33,3,75,
 tff-standings-engine,edu.svv.standings.generator,TeamStrength,0,30,0,0,0,2,0,2,0,2
 tff-standings-engine,edu.svv.standings.generator,ScenarioLibrary.Entry,0,18,0,0,0,1,0,1,0,1
 tff-standings-engine,edu.svv.standings.generator,SeasonGenerator.Fixture,0,9,0,0,0,1,0,1,0,1
-tff-standings-engine,edu.svv.standings.generator,SeasonGenerator,0,437,0,48,0,78,0,34,0,10
+tff-standings-engine,edu.svv.standings.generator,SeasonGenerator,0,436,0,48,0,78,0,34,0,10
 tff-standings-engine,edu.svv.standings.generator,RealismCheck,415,0,18,0,55,0,10,0,1,0
 tff-standings-engine,edu.svv.standings.model,MatchResult,0,59,0,12,0,12,0,8,0,2
 tff-standings-engine,edu.svv.standings.model,PointDeduction,0,23,0,4,0,6,0,3,0,1
@@ -23,5 +23,5 @@ tff-standings-engine,edu.svv.standings.io,CsvLoader,10,469,0,30,2,85,0,33,0,18
 tff-standings-engine,edu.svv.standings.io,InputFormatException,0,9,0,0,0,4,0,2,0,2
 tff-standings-engine,edu.svv.standings,TieBreaker.MiniStats,0,6,0,0,0,1,0,1,0,1
 tff-standings-engine,edu.svv.standings,TieBreaker,0,248,0,18,0,44,0,16,0,7
-tff-standings-engine,edu.svv.standings,StandingRow,0,149,0,8,0,35,0,23,0,19
-tff-standings-engine,edu.svv.standings,StandingsCalculator,6,380,1,53,1,75,1,34,0,8
+tff-standings-engine,edu.svv.standings,StandingRow,0,171,0,8,0,41,0,23,0,19
+tff-standings-engine,edu.svv.standings,StandingsCalculator,11,364,1,51,2,73,1,32,0,7

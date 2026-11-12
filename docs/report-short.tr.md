@@ -59,7 +59,7 @@ Ek olarak, son 10 Süper Lig sezonunun gerçek verisiyle takım gücü hesaplaya
 
 ## 4. Test Planı ve Teknikler
 
-Testleri koda bakmadan, **gereksinimlerden** türettim. Beklenen değerleri kurallardan elle hesapladım. Planda **133 test case** var, her birinde girdi, beklenen ve gerçekleşen sonuç yazılı (`docs/test-plan.md`).
+Testleri koda bakmadan, **gereksinimlerden** türettim. Beklenen değerleri kurallardan elle hesapladım. Planda **138 test case** var, her birinde girdi, beklenen ve gerçekleşen sonuç yazılı (`docs/test-plan.md`).
 
 | Teknik | Nasıl uyguladım | Örnek |
 |---|---|---|
@@ -93,7 +93,9 @@ void tc073() {
 |---|---|---|
 | run-01 | İlk kod, elle tasarlanan testler | 125 çalıştırma, **3 başarısız** |
 | run-02 | İki düzeltmeden sonra | 125 / 125 |
-| run-03 | Üreteç, özellik ve kapsam testleri eklendi | **655 / 655** |
+| run-03 | Üreteç, özellik ve kapsam testleri eklendi | 655 / 655 |
+| run-04 | Bağımsız kod incelemesinin bulduğu 3 hata için yeni testler | 663 çalıştırma, **8 başarısız** |
+| run-05 | Üç düzeltmeden sonra | **664 / 664** |
 
 Başarısız testleri düzeltmeden önce kırmızı haliyle commit'ledim, böylece süreç commit geçmişinde görünüyor. İlk koşudaki gerçek hata çıktısı:
 
@@ -108,18 +110,21 @@ TC-087 InputFormatException: matches.csv, line 1: unknown forfeit value ''
 |---|---|---|---|---|
 | DEF-001 | Ayrılamayan takımlar Türkçe alfabeye göre sıralanmıyordu; Ç, İ, Ş, Ü Z'den sonra geliyordu | TC-078, TC-079 | `String.compareTo` harfleri Unicode koduna göre karşılaştırıyor | Türkçe `Collator` |
 | DEF-002 | `A;B;1;0;` satırı reddediliyordu; boş hükmen alanı NONE sayılmalı | TC-087 | Boş alan geçersiz bir değer gibi işleniyordu | Boş alan = NONE |
+| DEF-003 | Adında `\|` olan takımlarda farklı maçlar "tekrar eden maç" sayılıyordu | TC-160 | Maç anahtarı isimler `\|` ile birleştirilerek kuruluyordu | Anahtar `Team` nesnelerinden |
+| DEF-004 | Çok büyük puan silmede sayı taşıyor, takım pozitif puan alıyordu | TC-161 | `int` toplamı taşma kontrolü olmadan yapılıyordu | `Math.addExact`, girdi reddedilir |
+| DEF-005 | Üreteçte fikstür dengesizdi: bazı takımlar ilk devrede hiç iç sahada oynamıyordu | TC-162 | Ev sahibi kuralı halka dönüşüyle birlikte kayıyordu | Konum paritesi; senaryolar yeniden üretildi |
 
-DEF-001'den kodu okurken şüphelenmiştim, test bunu doğruladı. DEF-002'yi ise yalnızca test buldu.
+DEF-001'den kodu okurken şüphelenmiştim, test bunu doğruladı. DEF-002'yi yalnızca test buldu. DEF-003..005'i, bütün testler yeşilken yaptığım bağımsız bir kod incelemesi buldu: planımda adlarda ayraç karakteri, `int` sınırı ve fikstür dengesi için bir sınıf yoktu. Her biri için önce başarısız bir test yazıp kırmızı haliyle commit'ledim, sonra düzelttim.
 
-**Kapsam (JaCoCo):** Branch kapsamı toplamda %71,0, testlerin hiç çalıştırmadığı iki geliştirici aracı hariç tutulunca %97,5. Kapsam raporuna bakıp 15 test daha ekledim; bunlar test edilmemiş gerçek yolları kapattı (G/Ç hataları, CLI hata çıktıları). Kalan boşluklardan biri hiçbir girdiyle çalıştırılamayan bir dal: üçüncü maç, daha önceki "tekrar eden maç" kontrolüne takılıyor.
+**Kapsam (JaCoCo):** Branch kapsamı toplamda %70,8, testlerin hiç çalıştırmadığı iki geliştirici aracı hariç tutulunca %97,4. Kapsam raporuna bakıp 15 test daha ekledim; bunlar test edilmemiş gerçek yolları kapattı (G/Ç hataları, CLI hata çıktıları). Kalan boşluklardan biri hiçbir girdiyle çalıştırılamayan bir dal: üçüncü maç, daha önceki "tekrar eden maç" kontrolüne takılıyor.
 
 **Kapsamın sınırı:** DEF-001, her testin zaten çalıştırdığı bir satırdaydı. Satır %100 kapsanmıştı ama yanlıştı; hatayı sadece Türkçe harfli test verisi ortaya çıkardı. Yani yüksek kapsam, kodun doğru olduğunu göstermez [3].
 
 ## 7. Değerlendirme ve Sonuç
 
-Testler iki gerçek hata buldu ve süreç baştan sona belgelendi. Kısıtlar da var:
+Testler ve sonradan yapılan kod incelemesi toplam beş gerçek hata buldu; süreç baştan sona belgelendi. Kısıtlar da var:
 
-- İki hata da çekirdek sıralama kuralının dışında. Eşitlik testlerinin hepsi ilk seferde geçti. Bu, çekirdeğin doğru olduğunu kanıtlamaz. Gereksinimi ve testleri aynı kişi yazdığı için kuralı ikisinde de aynı şekilde yanlış anlamış olabilirim.
+- Beş hatanın hiçbiri eşitlik bozma kuralının kendisinde değil. Eşitlik testlerinin hepsi ilk seferde geçti. Bu, çekirdeğin doğru olduğunu kanıtlamaz. Gereksinimi ve testleri aynı kişi yazdığı için kuralı ikisinde de aynı şekilde yanlış anlamış olabilirim.
 - Metamorfik testler istatistikleri kontrol ediyor ama eşitlik sırasını bağımsız olarak doğrulamıyor.
 - İyileştirme olarak mutation testing (ör. PIT) ve gerçek sezon maç sonuçlarıyla bir kabul testi eklenebilir.
 
