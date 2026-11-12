@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="tr"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TableFormatter.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">tff-standings-engine</a> &gt; <a href="index.source.html" class="el_package">edu.svv.standings.cli</a> &gt; <span class="el_source">TableFormatter.java</span></div><h1>TableFormatter.java</h1><pre class="source lang-java linenums">package edu.svv.standings.cli;
+
+import edu.svv.standings.StandingRow;
+
+import java.util.List;
+
+/**
+ * Puan tablosunu hizalı düz metin olarak biçimlendirir (FR-15).
+ */
+<span class="fc" id="L10">public class TableFormatter {</span>
+
+<span class="fc" id="L12">    private static final String[] HEADERS = {&quot;Pos&quot;, &quot;Team&quot;, &quot;P&quot;, &quot;W&quot;, &quot;D&quot;, &quot;L&quot;, &quot;GF&quot;, &quot;GA&quot;, &quot;GD&quot;, &quot;Pts&quot;};</span>
+    private static final String LEGEND = &quot;* = unresolved tie (requires playoff)&quot;;
+
+    public String format(List&lt;StandingRow&gt; table) {
+<span class="fc" id="L16">        int columns = HEADERS.length;</span>
+<span class="fc" id="L17">        String[][] cells = new String[table.size()][columns];</span>
+<span class="fc" id="L18">        int[] widths = new int[columns];</span>
+<span class="fc bfc" id="L19" title="All 2 branches covered.">        for (int c = 0; c &lt; columns; c++) {</span>
+<span class="fc" id="L20">            widths[c] = HEADERS[c].length();</span>
+        }
+
+<span class="fc" id="L23">        boolean anyUnresolved = false;</span>
+<span class="fc bfc" id="L24" title="All 2 branches covered.">        for (int r = 0; r &lt; table.size(); r++) {</span>
+<span class="fc" id="L25">            StandingRow row = table.get(r);</span>
+<span class="fc" id="L26">            cells[r] = new String[] {</span>
+<span class="fc" id="L27">                String.valueOf(row.getPosition()),</span>
+<span class="fc" id="L28">                row.getTeam().name(),</span>
+<span class="fc" id="L29">                String.valueOf(row.getPlayed()),</span>
+<span class="fc" id="L30">                String.valueOf(row.getWon()),</span>
+<span class="fc" id="L31">                String.valueOf(row.getDrawn()),</span>
+<span class="fc" id="L32">                String.valueOf(row.getLost()),</span>
+<span class="fc" id="L33">                String.valueOf(row.getGoalsFor()),</span>
+<span class="fc" id="L34">                String.valueOf(row.getGoalsAgainst()),</span>
+<span class="fc" id="L35">                String.valueOf(row.getGoalDifference()),</span>
+<span class="fc" id="L36">                String.valueOf(row.getPoints())</span>
+            };
+<span class="fc bfc" id="L38" title="All 2 branches covered.">            for (int c = 0; c &lt; columns; c++) {</span>
+<span class="fc" id="L39">                widths[c] = Math.max(widths[c], cells[r][c].length());</span>
+            }
+<span class="fc" id="L41">            anyUnresolved |= row.isUnresolved();</span>
+        }
+
+<span class="fc" id="L44">        StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L45">        appendRow(sb, HEADERS, widths, false);</span>
+<span class="fc bfc" id="L46" title="All 2 branches covered.">        for (int r = 0; r &lt; table.size(); r++) {</span>
+<span class="fc" id="L47">            appendRow(sb, cells[r], widths, table.get(r).isUnresolved());</span>
+        }
+<span class="fc bfc" id="L49" title="All 2 branches covered.">        if (anyUnresolved) {</span>
+<span class="fc" id="L50">            sb.append(LEGEND).append('\n');</span>
+        }
+<span class="fc" id="L52">        return sb.toString();</span>
+    }
+
+    private void appendRow(StringBuilder sb, String[] cells, int[] widths, boolean unresolved) {
+<span class="fc bfc" id="L56" title="All 2 branches covered.">        for (int c = 0; c &lt; cells.length; c++) {</span>
+<span class="fc bfc" id="L57" title="All 2 branches covered.">            if (c &gt; 0) {</span>
+<span class="fc" id="L58">                sb.append(&quot;  &quot;);</span>
+            }
+            // takım adı sola, sayılar sağa hizalanır
+<span class="fc bfc" id="L61" title="All 2 branches covered.">            if (c == 1) {</span>
+<span class="fc" id="L62">                sb.append(String.format(&quot;%-&quot; + widths[c] + &quot;s&quot;, cells[c]));</span>
+            } else {
+<span class="fc" id="L64">                sb.append(String.format(&quot;%&quot; + widths[c] + &quot;s&quot;, cells[c]));</span>
+            }
+        }
+<span class="fc bfc" id="L67" title="All 2 branches covered.">        if (unresolved) {</span>
+<span class="fc" id="L68">            sb.append(&quot; *&quot;);</span>
+        }
+<span class="fc" id="L70">        sb.append('\n');</span>
+<span class="fc" id="L71">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

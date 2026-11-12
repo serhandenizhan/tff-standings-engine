@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="tr"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CsvLoader.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">tff-standings-engine</a> &gt; <a href="index.source.html" class="el_package">edu.svv.standings.io</a> &gt; <span class="el_source">CsvLoader.java</span></div><h1>CsvLoader.java</h1><pre class="source lang-java linenums">package edu.svv.standings.io;
+
+import edu.svv.standings.model.Forfeit;
+import edu.svv.standings.model.MatchResult;
+import edu.svv.standings.model.PointDeduction;
+import edu.svv.standings.model.Team;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.Reader;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+/**
+ * Noktalı virgülle ayrılmış, başlıksız, UTF-8 CSV dosyalarını okur (FR-14, V-08).
+ * Her hata, dosya adı ve 1 tabanlı satır numarasıyla InputFormatException olarak bildirilir.
+ */
+<span class="fc" id="L25">public class CsvLoader {</span>
+
+    private static final String SEPARATOR = &quot;;&quot;;
+
+    // --- Path tabanlı yöntemler ---
+
+    public List&lt;Team&gt; loadTeams(Path file) {
+<span class="fc" id="L32">        return parseTeams(readLines(file), file.getFileName().toString());</span>
+    }
+
+    public List&lt;MatchResult&gt; loadMatches(Path file, List&lt;Team&gt; teams) {
+<span class="fc" id="L36">        return parseMatches(readLines(file), teams, file.getFileName().toString());</span>
+    }
+
+    public List&lt;PointDeduction&gt; loadDeductions(Path file, List&lt;Team&gt; teams) {
+<span class="fc" id="L40">        return parseDeductions(readLines(file), teams, file.getFileName().toString());</span>
+    }
+
+    // --- Reader tabanlı yöntemler (testlerde dosyasız kullanım için) ---
+
+    public List&lt;Team&gt; parseTeams(Reader reader, String sourceName) {
+<span class="fc" id="L46">        return parseTeams(readLines(reader, sourceName), sourceName);</span>
+    }
+
+    public List&lt;MatchResult&gt; parseMatches(Reader reader, List&lt;Team&gt; teams, String sourceName) {
+<span class="fc" id="L50">        return parseMatches(readLines(reader, sourceName), teams, sourceName);</span>
+    }
+
+    public List&lt;PointDeduction&gt; parseDeductions(Reader reader, List&lt;Team&gt; teams, String sourceName) {
+<span class="fc" id="L54">        return parseDeductions(readLines(reader, sourceName), teams, sourceName);</span>
+    }
+
+    // --- Satır listesi tabanlı yöntemler ---
+
+    public List&lt;Team&gt; parseTeams(List&lt;String&gt; lines, String sourceName) {
+<span class="fc" id="L60">        List&lt;Team&gt; teams = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L61" title="All 2 branches covered.">        for (int i = 0; i &lt; lines.size(); i++) {</span>
+<span class="fc" id="L62">            String line = cleanLine(lines.get(i), i);</span>
+<span class="fc bfc" id="L63" title="All 2 branches covered.">            if (line.isBlank()) {</span>
+<span class="fc" id="L64">                continue;</span>
+            }
+<span class="fc" id="L66">            String[] fields = split(line, 1, 1, sourceName, i + 1);</span>
+            try {
+<span class="fc" id="L68">                teams.add(new Team(fields[0]));</span>
+<span class="nc" id="L69">            } catch (IllegalArgumentException e) {</span>
+<span class="nc" id="L70">                throw error(sourceName, i + 1, e.getMessage());</span>
+<span class="fc" id="L71">            }</span>
+        }
+<span class="fc" id="L73">        return teams;</span>
+    }
+
+    /**
+     * Bilinmeyen takım adları burada, dosya adı ve satır numarasıyla reddedilir;
+     * böylece kullanıcı hatanın hangi satırda olduğunu görür. (Hesaplayıcının V-03 kontrolü ek güvence olarak kalır.)
+     */
+    public List&lt;MatchResult&gt; parseMatches(List&lt;String&gt; lines, List&lt;Team&gt; teams, String sourceName) {
+<span class="fc" id="L81">        Set&lt;Team&gt; known = new HashSet&lt;&gt;(teams);</span>
+<span class="fc" id="L82">        List&lt;MatchResult&gt; matches = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L83" title="All 2 branches covered.">        for (int i = 0; i &lt; lines.size(); i++) {</span>
+<span class="fc" id="L84">            String line = cleanLine(lines.get(i), i);</span>
+<span class="fc bfc" id="L85" title="All 2 branches covered.">            if (line.isBlank()) {</span>
+<span class="fc" id="L86">                continue;</span>
+            }
+<span class="fc" id="L88">            int lineNo = i + 1;</span>
+<span class="fc" id="L89">            String[] fields = split(line, 4, 5, sourceName, lineNo);</span>
+            try {
+<span class="fc" id="L91">                Team home = new Team(fields[0]);</span>
+<span class="fc" id="L92">                Team away = new Team(fields[1]);</span>
+<span class="fc" id="L93">                requireKnown(home, known, sourceName, lineNo);</span>
+<span class="fc" id="L94">                requireKnown(away, known, sourceName, lineNo);</span>
+<span class="fc" id="L95">                int homeGoals = parseInt(fields[2], sourceName, lineNo);</span>
+<span class="fc" id="L96">                int awayGoals = parseInt(fields[3], sourceName, lineNo);</span>
+<span class="fc bfc" id="L97" title="All 2 branches covered.">                Forfeit forfeit = fields.length == 5 ? parseForfeit(fields[4], sourceName, lineNo) : Forfeit.NONE;</span>
+<span class="fc" id="L98">                matches.add(new MatchResult(home, away, homeGoals, awayGoals, forfeit));</span>
+<span class="fc" id="L99">            } catch (IllegalArgumentException e) {</span>
+                // model doğrulaması (boş isim, negatif gol, aynı takım) satır bilgisiyle sarılır
+<span class="fc" id="L101">                throw error(sourceName, lineNo, e.getMessage());</span>
+<span class="fc" id="L102">            }</span>
+        }
+<span class="fc" id="L104">        return matches;</span>
+    }
+
+    public List&lt;PointDeduction&gt; parseDeductions(List&lt;String&gt; lines, List&lt;Team&gt; teams, String sourceName) {
+<span class="fc" id="L108">        Set&lt;Team&gt; known = new HashSet&lt;&gt;(teams);</span>
+<span class="fc" id="L109">        List&lt;PointDeduction&gt; deductions = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L110" title="All 2 branches covered.">        for (int i = 0; i &lt; lines.size(); i++) {</span>
+<span class="fc" id="L111">            String line = cleanLine(lines.get(i), i);</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">            if (line.isBlank()) {</span>
+<span class="fc" id="L113">                continue;</span>
+            }
+<span class="fc" id="L115">            int lineNo = i + 1;</span>
+<span class="fc" id="L116">            String[] fields = split(line, 2, 2, sourceName, lineNo);</span>
+            try {
+<span class="fc" id="L118">                Team team = new Team(fields[0]);</span>
+<span class="fc" id="L119">                requireKnown(team, known, sourceName, lineNo);</span>
+<span class="fc" id="L120">                int points = parseInt(fields[1], sourceName, lineNo);</span>
+<span class="fc" id="L121">                deductions.add(new PointDeduction(team, points));</span>
+<span class="fc" id="L122">            } catch (IllegalArgumentException e) {</span>
+<span class="fc" id="L123">                throw error(sourceName, lineNo, e.getMessage());</span>
+<span class="fc" id="L124">            }</span>
+        }
+<span class="fc" id="L126">        return deductions;</span>
+    }
+
+    // --- yardımcılar ---
+
+    private List&lt;String&gt; readLines(Path file) {
+        try {
+<span class="fc" id="L133">            return Files.readAllLines(file, StandardCharsets.UTF_8);</span>
+<span class="fc" id="L134">        } catch (NoSuchFileException e) {</span>
+<span class="fc" id="L135">            throw new InputFormatException(&quot;File not found: &quot; + file, e);</span>
+<span class="fc" id="L136">        } catch (IOException e) {</span>
+            // geçersiz UTF-8 de buraya düşer
+<span class="fc" id="L138">            throw new InputFormatException(&quot;Cannot read file &quot; + file + &quot;: &quot; + e, e);</span>
+        }
+    }
+
+    private List&lt;String&gt; readLines(Reader reader, String sourceName) {
+<span class="fc" id="L143">        try (BufferedReader buffered = new BufferedReader(reader)) {</span>
+<span class="fc" id="L144">            return buffered.lines().toList();</span>
+<span class="fc" id="L145">        } catch (UncheckedIOException e) {</span>
+<span class="fc" id="L146">            throw new InputFormatException(&quot;Cannot read &quot; + sourceName + &quot;: &quot; + e.getCause(), e);</span>
+<span class="fc" id="L147">        } catch (IOException e) {</span>
+<span class="fc" id="L148">            throw new InputFormatException(&quot;Cannot read &quot; + sourceName + &quot;: &quot; + e, e);</span>
+        }
+    }
+
+    // ilk satırdaki UTF-8 BOM karakteri atılır; başka bir temizlik yapılmaz
+    private String cleanLine(String line, int index) {
+<span class="fc bfc" id="L154" title="All 4 branches covered.">        if (index == 0 &amp;&amp; line.startsWith(&quot;﻿&quot;)) {</span>
+<span class="fc" id="L155">            return line.substring(1);</span>
+        }
+<span class="fc" id="L157">        return line;</span>
+    }
+
+    private String[] split(String line, int min, int max, String sourceName, int lineNo) {
+        // -1: sondaki boş alanlar da sayılsın (&quot;a;b;&quot; 3 alan olur)
+<span class="fc" id="L162">        String[] fields = line.split(SEPARATOR, -1);</span>
+<span class="fc bfc" id="L163" title="All 4 branches covered.">        if (fields.length &lt; min || fields.length &gt; max) {</span>
+<span class="fc bfc" id="L164" title="All 2 branches covered.">            String expected = min == max ? String.valueOf(min) : min + &quot; or &quot; + max;</span>
+<span class="fc" id="L165">            throw error(sourceName, lineNo, &quot;expected &quot; + expected + &quot; fields but found &quot; + fields.length);</span>
+        }
+<span class="fc bfc" id="L167" title="All 2 branches covered.">        for (int i = 0; i &lt; fields.length; i++) {</span>
+<span class="fc" id="L168">            fields[i] = fields[i].trim();</span>
+        }
+<span class="fc" id="L170">        return fields;</span>
+    }
+
+    private int parseInt(String text, String sourceName, int lineNo) {
+        try {
+<span class="fc" id="L175">            return Integer.parseInt(text);</span>
+<span class="fc" id="L176">        } catch (NumberFormatException e) {</span>
+<span class="fc" id="L177">            throw error(sourceName, lineNo, &quot;not an integer: '&quot; + text + &quot;'&quot;);</span>
+        }
+    }
+
+    private Forfeit parseForfeit(String text, String sourceName, int lineNo) {
+        // DEF-002: 5. alan var ama boşsa (&quot;A;B;1;0;&quot;) alan verilmemiş sayılır; FR-14: varsayılan NONE
+<span class="fc bfc" id="L183" title="All 2 branches covered.">        if (text.isEmpty()) {</span>
+<span class="fc" id="L184">            return Forfeit.NONE;</span>
+        }
+        try {
+<span class="fc" id="L187">            return Forfeit.valueOf(text);</span>
+<span class="fc" id="L188">        } catch (IllegalArgumentException e) {</span>
+<span class="fc" id="L189">            throw error(sourceName, lineNo, &quot;unknown forfeit value '&quot; + text + &quot;' (expected NONE, HOME or AWAY)&quot;);</span>
+        }
+    }
+
+    private void requireKnown(Team team, Set&lt;Team&gt; known, String sourceName, int lineNo) {
+<span class="fc bfc" id="L194" title="All 2 branches covered.">        if (!known.contains(team)) {</span>
+<span class="fc" id="L195">            throw error(sourceName, lineNo, &quot;unknown team '&quot; + team.name() + &quot;'&quot;);</span>
+        }
+<span class="fc" id="L197">    }</span>
+
+    private InputFormatException error(String sourceName, int lineNo, String detail) {
+<span class="fc" id="L200">        return new InputFormatException(sourceName + &quot;, line &quot; + lineNo + &quot;: &quot; + detail);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

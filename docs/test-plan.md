@@ -478,6 +478,30 @@ TC-100..TC-134 as specified in §6 (technique PBT/MR, generator correctness, BVA
 
 ---
 
+### 7.11 Added after coverage analysis — `cli/`, `io/`, `generator/` `CoverageGapTest`
+
+White-box tests derived from requirements for gaps found in the JaCoCo report (`docs/coverage-analysis.md`).
+
+| TC | Class | Input | Expected | Basis |
+|---|---|---|---|---|
+| TC-140 | `cli/CoverageGapTest` | `Main.run(null, ...)` | exit 2, usage on stderr, stdout empty | FR-14, FR-15, D-03 |
+| TC-141 | `cli/CoverageGapTest` | `--scenario random` (no seed) | exit 0, header `Scenario Sxx (picked with seed N): ...`, rerun with that N succeeds | seed printed for reproducibility |
+| TC-142 | `cli/CoverageGapTest` | teams.csv `A,B,A` | exit 1, `Invalid data: Duplicate team`, no table | V-02 |
+| TC-143 | `cli/CoverageGapTest` | matches.csv with `A;B` twice | exit 1, `Invalid data: Duplicate fixture`, no table | V-06 |
+| TC-144 | `io/CoverageGapTest` | file with invalid UTF-8 bytes | `InputFormatException` "Cannot read file" | FR-14, V-08 |
+| TC-145 | `io/CoverageGapTest` | directory passed as file | `InputFormatException` | V-08 |
+| TC-146 | `io/CoverageGapTest` | reader that throws on `read` | `InputFormatException` "Cannot read teams.csv" | V-08 |
+| TC-147 | `io/CoverageGapTest` | reader that throws on `close` | `InputFormatException` "Cannot read matches.csv" | V-08 |
+| TC-148 | `generator/CoverageGapTest` | `writeCsv` then `CsvLoader` read-back (forfeit, deduction, Turkish names) | equal teams, matches, deductions | FR-14 format |
+| TC-149 | `generator/CoverageGapTest` | `writeCsv` with no deductions | `deductions.csv` is empty | writeCsv contract |
+| TC-150 | `generator/CoverageGapTest` | season and club lines with blank lines | model built, blank lines ignored | generator.md |
+| TC-151 | `generator/CoverageGapTest` | season line with 9 fields; non-integer `played` | `IllegalArgumentException` | generator.md input format |
+| TC-152 | `generator/CoverageGapTest` | one season only; blank-only club list | `IllegalArgumentException` | generator.md "Strength" |
+| TC-153 | `generator/CoverageGapTest` | `promotedAverage()` on a small model | attack 1.2, defence 1.4; club without history uses it | generator.md "Strength" |
+| TC-154 | `generator/CoverageGapTest` | `seed()`; `doubleRoundRobin` with 0, 1, 3, 17 and 2 teams | seed returned; invalid sizes rejected; 2 teams -> 2 rounds, venues swapped | generator.md "Schedule", BVA |
+
+---
+
 ## 8. Mapping to JUnit test classes (for parallel implementation)
 
 All under `src/test/java/edu/svv/standings/`. Each test method gets `@DisplayName("TC-xxx – short text")`.
@@ -500,7 +524,10 @@ All under `src/test/java/edu/svv/standings/`. Each test method gets `@DisplayNam
 | `generator/StrengthModelTest` | TC-120..TC-123 | 4 | expected values recomputed from the resource CSV |
 | `generator/ScenarioLibraryTest` | TC-124..TC-128 | 5 | ids, load, reproducibility, `pickRandomId`, unknown id |
 | `cli/MainScenarioTest` | TC-130..TC-134 | 5 | `--scenario` exit codes and output |
-| **Total** | | **95** | |
+| `cli/CoverageGapTest` | TC-140..TC-143 | 4 | added after coverage analysis |
+| `io/CoverageGapTest` | TC-144..TC-147 | 4 | added after coverage analysis |
+| `generator/CoverageGapTest` | TC-148..TC-154 | 7 | added after coverage analysis |
+| **Total** | | **110** | |
 
 Shared fixture suggestion: a tiny test helper `Leagues` (test scope) with `team(String)`, `m("A","B",2,1)`, `m("A","B",2,1,Forfeit.HOME)` to keep fixtures readable and identical to this plan.
 
@@ -536,23 +563,23 @@ Shared fixture suggestion: a tiny test helper `Leagues` (test scope) with `team(
 | FR-11 | **TC-072, TC-073**, TC-070 |
 | FR-12 | TC-011, TC-015, TC-031, TC-058, TC-059, TC-070, TC-071, TC-078, TC-103, TC-108, TC-109 |
 | FR-13 | TC-010, TC-012, TC-091, TC-102 |
-| FR-14 | TC-080..TC-083, TC-087, TC-089, TC-095, TC-096, TC-099, TC-125 |
-| FR-15 | TC-091..TC-095, TC-099, TC-130..TC-131 |
+| FR-14 | TC-080..TC-083, TC-087, TC-089, TC-095, TC-096, TC-099, TC-125, TC-140, TC-144..TC-148 |
+| FR-15 | TC-091..TC-095, TC-099, TC-130..TC-131, TC-140, TC-141 |
 | V-01 | TC-002, TC-007, TC-009, TC-040, TC-041 |
-| V-02 | TC-002, TC-042 |
+| V-02 | TC-002, TC-042, TC-142 |
 | V-03 | TC-044, TC-045, TC-098 |
 | V-04 | TC-006 |
 | V-05 | TC-005, TC-088 |
-| V-06 | TC-046, TC-048, TC-113 |
+| V-06 | TC-046, TC-048, TC-113, TC-143 |
 | V-07 | TC-008, TC-035, TC-089 |
-| V-08 | TC-084, TC-085, TC-086, TC-088, TC-090, TC-098 |
+| V-08 | TC-084, TC-085, TC-086, TC-088, TC-090, TC-098, TC-144..TC-147 |
 | A-01 | all GD assertions (TC-010, TC-012, TC-101) |
 | A-02 | TC-034, TC-107 |
 | A-03 | TC-013, TC-015, TC-060, TC-075 |
 | A-04 | TC-013 |
 | D-01 | TC-003, TC-006, TC-042, TC-043, TC-045, TC-082 |
 | D-02 | TC-011, TC-015, TC-058, TC-059, TC-070, TC-071, TC-078, TC-079, TC-099, TC-105 |
-| D-03 | TC-095..TC-099, TC-130..TC-134 |
+| D-03 | TC-095..TC-099, TC-130..TC-134, TC-140 |
 
 Decision-table coverage: 4.1 R1–R7 + R2' → TC-050..TC-059; 4.2 M1–M9 → TC-065..TC-073; 4.3 F1–F6 → TC-011, TC-020..TC-022; 4.4 D1–D5 → TC-030..TC-035. Every rule has ≥ 1 case.
 

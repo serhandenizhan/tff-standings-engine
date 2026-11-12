@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="tr"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SeasonGenerator.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">tff-standings-engine</a> &gt; <a href="index.source.html" class="el_package">edu.svv.standings.generator</a> &gt; <span class="el_source">SeasonGenerator.java</span></div><h1>SeasonGenerator.java</h1><pre class="source lang-java linenums">package edu.svv.standings.generator;
+
+import edu.svv.standings.model.Forfeit;
+import edu.svv.standings.model.MatchResult;
+import edu.svv.standings.model.PointDeduction;
+import edu.svv.standings.model.Team;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Random;
+
+/**
+ * Gerçekçi rastgele Süper Lig sezonu üreteci (2026-27 kulüpleri, çift devreli lig, 34 hafta).
+ *
+ * Eşitlik garanti edilmez ya da kurgulanmaz; sezonlar yalnızca güç modeli ve rastlantı ile oluşur.
+ * Yalnızca seed ile kurulan java.util.Random kullanılır: aynı seed (ve aynı güç verisi) her zaman aynı sezonu verir.
+ * Üreteç test edilen koda (StandingsCalculator, TieBreaker) bağımlı değildir.
+ *
+ * Modelleme kararları (ayrıntı ve gerekçeler: docs/generator.md):
+ * - Gol modeli: bağımsız Poisson. λ_ev = μ·(hücum_ev/μ)·(savunma_dep/μ)·H, λ_dep = μ·(hücum_dep/μ)·(savunma_ev/μ)/H.
+ * - Fikstür: daire (circle) yöntemi; ilk devre 17 hafta, ikinci devre aynı eşleşmeler ev/deplasman yer değiştirmiş.
+ * - Sezon ortası tablo = ilk k hafta. Sezon her zaman 34 hafta üretilip kesilir; böylece generate(k),
+ *   aynı seed'li generate(34)'ün ilk k haftasıdır ve rastgele sayı tüketimi k'dan bağımsızdır.
+ * - Hükmen: her maç için %1 olasılık, taraf yazı-tura. Sahadaki skor saklanır, FMT 23/4 düzeltmesini hesaplayıcı yapar.
+ * - Puan silme: her kulüp için sezon başına %2 olasılık, 3 puan; silmenin geldiği hafta 1..34 arasında düzgün dağılır,
+ *   sezon ortası tabloda yalnızca o haftaya kadar gelen silmeler yer alır.
+ */
+public final class SeasonGenerator {
+
+    /** Çift devreli 18 takımlı ligde hafta sayısı. */
+    public static final int ROUNDS = 34;
+
+    /**
+     * Ev sahibi avantajı çarpanı H. Eşit güçte iki takımda λ_ev/λ_dep = H² ≈ 1,21, yani ev sahibi
+     * gollerin yaklaşık %55'ini atar. Varsayım: avrupa liglerinde ve Süper Lig'de yaygın görülen ev payı (~%54–56);
+     * kullanılan CSV'de iç saha / deplasman ayrımı olmadığı için veriden ölçülmedi.
+     */
+    public static final double HOME_ADVANTAGE = 1.10;
+
+    /** Maç başına hükmen olasılığı (kullanıcı kararı: ~%1). */
+    public static final double FORFEIT_PROBABILITY = 0.01;
+
+    /** Kulüp başına sezonluk puan silme olasılığı (kullanıcı kararı: nadir, ~%2). */
+    public static final double DEDUCTION_PROBABILITY = 0.02;
+
+    /** Bir puan silmede silinen puan (FMT 24/1-a'daki galibiyet puanı kadar). */
+    public static final int DEDUCTION_POINTS = 3;
+
+    /** Fikstürdeki tek bir maç (ev sahibi, deplasman). */
+<span class="fc" id="L51">    public record Fixture(Team home, Team away) {</span>
+    }
+
+    private final long seed;
+    private final StrengthModel model;
+
+    public SeasonGenerator(long seed) {
+<span class="fc" id="L58">        this(seed, StrengthModel.loadDefault());</span>
+<span class="fc" id="L59">    }</span>
+
+<span class="fc" id="L61">    public SeasonGenerator(long seed, StrengthModel model) {</span>
+<span class="fc bfc" id="L62" title="All 2 branches covered.">        if (model == null) {</span>
+<span class="fc" id="L63">            throw new IllegalArgumentException(&quot;Strength model must not be null&quot;);</span>
+        }
+<span class="fc" id="L65">        this.seed = seed;</span>
+<span class="fc" id="L66">        this.model = model;</span>
+<span class="fc" id="L67">    }</span>
+
+    public long seed() {
+<span class="fc" id="L70">        return seed;</span>
+    }
+
+    /** Tam sezon (34 hafta). */
+    public GeneratedSeason generateFullSeason() {
+<span class="fc" id="L75">        return generate(ROUNDS);</span>
+    }
+
+    /**
+     * İlk {@code rounds} haftası oynanmış sezonu üretir.
+     * Her çağrı yeni bir Random(seed) ile başlar; aynı nesnede tekrar çağırmak aynı sonucu verir.
+     *
+     * @param rounds 1..34
+     */
+    public GeneratedSeason generate(int rounds) {
+<span class="fc" id="L85">        List&lt;TeamStrength&gt; strengths = model.strengths();</span>
+<span class="fc" id="L86">        int totalRounds = 2 * (strengths.size() - 1);</span>
+<span class="fc bfc" id="L87" title="All 4 branches covered.">        if (rounds &lt; 1 || rounds &gt; totalRounds) {</span>
+<span class="fc" id="L88">            throw new IllegalArgumentException(&quot;rounds must be between 1 and &quot; + totalRounds + &quot;: &quot; + rounds);</span>
+        }
+<span class="fc" id="L90">        Random random = new Random(seed);</span>
+
+        // takım listesi kulüp dosyasının sırasıyla; fikstür sırası ise seed'e göre karıştırılır
+<span class="fc" id="L93">        List&lt;Team&gt; teams = strengths.stream().map(s -&gt; new Team(s.club())).toList();</span>
+<span class="fc" id="L94">        List&lt;Team&gt; drawOrder = new ArrayList&lt;&gt;(teams);</span>
+<span class="fc" id="L95">        Collections.shuffle(drawOrder, random);</span>
+<span class="fc" id="L96">        List&lt;List&lt;Fixture&gt;&gt; schedule = doubleRoundRobin(drawOrder);</span>
+
+        // tüm 34 hafta üretilir, sonra kesilir (rastgele sayı tüketimi rounds'tan bağımsız)
+<span class="fc" id="L99">        List&lt;MatchResult&gt; matches = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L100">        int forfeits = 0;</span>
+<span class="fc bfc" id="L101" title="All 2 branches covered.">        for (int r = 0; r &lt; schedule.size(); r++) {</span>
+<span class="fc bfc" id="L102" title="All 2 branches covered.">            for (Fixture f : schedule.get(r)) {</span>
+<span class="fc" id="L103">                MatchResult m = playMatch(f, random);</span>
+<span class="fc bfc" id="L104" title="All 2 branches covered.">                if (r &lt; rounds) {</span>
+<span class="fc" id="L105">                    matches.add(m);</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">                    if (m.forfeit() != Forfeit.NONE) {</span>
+<span class="fc" id="L107">                        forfeits++;</span>
+                    }
+                }
+<span class="fc" id="L110">            }</span>
+        }
+
+<span class="fc" id="L113">        List&lt;PointDeduction&gt; deductions = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L114" title="All 2 branches covered.">        for (Team t : teams) {</span>
+<span class="fc bfc" id="L115" title="All 2 branches covered.">            boolean deducted = random.nextDouble() &lt; DEDUCTION_PROBABILITY;</span>
+            // silmenin geldiği hafta her durumda çekilir ki sonraki takımların rastgele sayıları kaymasın
+<span class="fc" id="L117">            int round = random.nextInt(totalRounds) + 1;</span>
+<span class="fc bfc" id="L118" title="All 4 branches covered.">            if (deducted &amp;&amp; round &lt;= rounds) {</span>
+<span class="fc" id="L119">                deductions.add(new PointDeduction(t, DEDUCTION_POINTS));</span>
+            }
+<span class="fc" id="L121">        }</span>
+
+<span class="fc" id="L123">        String description = &quot;Random season, seed &quot; + seed + &quot;, &quot; + rounds + &quot;/&quot; + totalRounds + &quot; rounds, &quot;</span>
+<span class="fc" id="L124">                + matches.size() + &quot; matches, &quot; + forfeits + &quot; forfeit(s), &quot; + deductions.size() + &quot; deduction(s)&quot;;</span>
+<span class="fc" id="L125">        return new GeneratedSeason(teams, List.copyOf(matches), List.copyOf(deductions), description);</span>
+    }
+
+    /**
+     * Daire yöntemiyle çift devreli fikstür. İlk takım sabit kalır, diğerleri her hafta bir adım döner.
+     * İlk devrede her çift bir kez karşılaşır; ikinci devre aynı haftalar ev/deplasman değiştirilmiş hâlidir.
+     * Ev sahibi seçimi basit bir parite kuralıyla yapılır (dengeli ama &quot;break&quot; optimizasyonu yok; varsayım: yeterli).
+     *
+     * @param order takımlar (çift sayıda); sıra fikstürü belirler
+     * @return 2·(n−1) hafta, her hafta n/2 maç
+     */
+    public static List&lt;List&lt;Fixture&gt;&gt; doubleRoundRobin(List&lt;Team&gt; order) {
+<span class="fc" id="L137">        int n = order.size();</span>
+<span class="fc bfc" id="L138" title="All 4 branches covered.">        if (n &lt; 2 || n % 2 != 0) {</span>
+<span class="fc" id="L139">            throw new IllegalArgumentException(&quot;An even number of at least 2 teams is required: &quot; + n);</span>
+        }
+<span class="fc" id="L141">        List&lt;Team&gt; ring = new ArrayList&lt;&gt;(order);</span>
+<span class="fc" id="L142">        List&lt;List&lt;Fixture&gt;&gt; firstHalf = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L143" title="All 2 branches covered.">        for (int r = 0; r &lt; n - 1; r++) {</span>
+<span class="fc" id="L144">            List&lt;Fixture&gt; round = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L145" title="All 2 branches covered.">            for (int i = 0; i &lt; n / 2; i++) {</span>
+<span class="fc" id="L146">                Team a = ring.get(i);</span>
+<span class="fc" id="L147">                Team b = ring.get(n - 1 - i);</span>
+                // sabit takım haftadan haftaya ev/deplasman değiştirir; diğer çiftlerde hafta + konum paritesi
+<span class="fc bfc" id="L149" title="All 6 branches covered.">                boolean aHome = (i == 0) ? (r % 2 == 0) : ((r + i) % 2 == 0);</span>
+<span class="fc bfc" id="L150" title="All 2 branches covered.">                round.add(aHome ? new Fixture(a, b) : new Fixture(b, a));</span>
+            }
+<span class="fc" id="L152">            firstHalf.add(round);</span>
+            // döndürme: son eleman 1. konuma geçer, 0. konum sabit
+<span class="fc" id="L154">            ring.add(1, ring.remove(n - 1));</span>
+        }
+<span class="fc" id="L156">        List&lt;List&lt;Fixture&gt;&gt; all = new ArrayList&lt;&gt;(firstHalf);</span>
+<span class="fc bfc" id="L157" title="All 2 branches covered.">        for (List&lt;Fixture&gt; round : firstHalf) {</span>
+<span class="fc" id="L158">            all.add(round.stream().map(f -&gt; new Fixture(f.away(), f.home())).toList());</span>
+<span class="fc" id="L159">        }</span>
+<span class="fc" id="L160">        return all;</span>
+    }
+
+    private MatchResult playMatch(Fixture f, Random random) {
+<span class="fc" id="L164">        double mu = model.leagueMeanGoals();</span>
+<span class="fc" id="L165">        TeamStrength home = model.strengthOf(f.home().name());</span>
+<span class="fc" id="L166">        TeamStrength away = model.strengthOf(f.away().name());</span>
+        // μ·(hücum/μ)·(savunma/μ) = hücum·savunma/μ
+<span class="fc" id="L168">        double lambdaHome = home.attack() * away.defence() / mu * HOME_ADVANTAGE;</span>
+<span class="fc" id="L169">        double lambdaAway = away.attack() * home.defence() / mu / HOME_ADVANTAGE;</span>
+<span class="fc" id="L170">        int homeGoals = poisson(lambdaHome, random);</span>
+<span class="fc" id="L171">        int awayGoals = poisson(lambdaAway, random);</span>
+
+<span class="fc" id="L173">        Forfeit forfeit = Forfeit.NONE;</span>
+<span class="fc bfc" id="L174" title="All 2 branches covered.">        if (random.nextDouble() &lt; FORFEIT_PROBABILITY) {</span>
+<span class="fc bfc" id="L175" title="All 2 branches covered.">            forfeit = random.nextBoolean() ? Forfeit.HOME : Forfeit.AWAY;</span>
+        }
+<span class="fc" id="L177">        return new MatchResult(f.home(), f.away(), homeGoals, awayGoals, forfeit);</span>
+    }
+
+    /**
+     * Knuth yöntemiyle Poisson örneklemesi: e^{-λ} eşiğinin altına inene kadar düzgün sayılar çarpılır.
+     * λ burada en fazla ~4 olduğu için yöntem hem doğru hem yeterince hızlıdır.
+     */
+    static int poisson(double lambda, Random random) {
+<span class="fc bfc" id="L185" title="All 2 branches covered.">        if (lambda &lt;= 0) {</span>
+<span class="fc" id="L186">            throw new IllegalArgumentException(&quot;lambda must be positive: &quot; + lambda);</span>
+        }
+<span class="fc" id="L188">        double limit = Math.exp(-lambda);</span>
+<span class="fc" id="L189">        double product = random.nextDouble();</span>
+<span class="fc" id="L190">        int k = 0;</span>
+<span class="fc bfc" id="L191" title="All 2 branches covered.">        while (product &gt; limit) {</span>
+<span class="fc" id="L192">            k++;</span>
+<span class="fc" id="L193">            product *= random.nextDouble();</span>
+        }
+<span class="fc" id="L195">        return k;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

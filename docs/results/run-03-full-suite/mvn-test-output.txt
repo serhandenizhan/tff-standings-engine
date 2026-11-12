@@ -1,0 +1,119 @@
+[INFO] Scanning for projects...
+[INFO] Loaded 24463 auto-discovered prefixes for remote repository central (prefixes-central.txt)
+[INFO] 
+[INFO] --------------------< edu.svv:tff-standings-engine >--------------------
+[INFO] Building tff-standings-engine 0.1.0-SNAPSHOT
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] Loaded 64 auto-discovered prefixes for remote repository apache.snapshots (prefixes-apache.snapshots.txt)
+[INFO] 
+[INFO] --- clean:3.5.0:clean (default-clean) @ tff-standings-engine ---
+[INFO] Deleting ~/Desktop/Projeler/tff-standings-engine/target
+[INFO] 
+[INFO] --- jacoco:0.8.13:prepare-agent (prepare-agent) @ tff-standings-engine ---
+[INFO] argLine set to -javaagent:~/.m2/repository/org/jacoco/org.jacoco.agent/0.8.13/org.jacoco.agent-0.8.13-runtime.jar=destfile=~/Desktop/Projeler/tff-standings-engine/target/jacoco.exec
+[INFO] 
+[INFO] --- resources:3.5.0:resources (default-resources) @ tff-standings-engine ---
+[INFO] Copying 39 resources from src/main/resources to target/classes
+[INFO] 
+[INFO] --- compiler:3.13.0:compile (default-compile) @ tff-standings-engine ---
+[INFO] Recompiling the module because of changed source code.
+[INFO] Compiling 18 source files with javac [debug release 21] to target/classes
+[INFO] 
+[INFO] --- resources:3.5.0:testResources (default-testResources) @ tff-standings-engine ---
+[INFO] skip non existing resourceDirectory ~/Desktop/Projeler/tff-standings-engine/src/test/resources
+[INFO] 
+[INFO] --- compiler:3.13.0:testCompile (default-testCompile) @ tff-standings-engine ---
+[INFO] Recompiling the module because of changed dependency.
+[INFO] Compiling 21 source files with javac [debug release 21] to target/test-classes
+[INFO] 
+[INFO] --- surefire:3.5.2:test (default-test) @ tff-standings-engine ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running edu.svv.standings.io.CoverageGapTest
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.038 s -- in edu.svv.standings.io.CoverageGapTest
+[INFO] Running edu.svv.standings.io.CsvLoaderTest
+[INFO] Tests run: 29, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.049 s -- in edu.svv.standings.io.CsvLoaderTest
+[INFO] Running edu.svv.standings.StandingsCalculatorTest
+[INFO] Running edu.svv.standings.StandingsCalculatorTest$Validation
+[INFO] Tests run: 14, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.011 s -- in edu.svv.standings.StandingsCalculatorTest$Validation
+[INFO] Running edu.svv.standings.StandingsCalculatorTest$Deductions
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.014 s -- in edu.svv.standings.StandingsCalculatorTest$Deductions
+[INFO] Running edu.svv.standings.StandingsCalculatorTest$ForfeitAdjustment
+[INFO] Tests run: 10, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.008 s -- in edu.svv.standings.StandingsCalculatorTest$ForfeitAdjustment
+[INFO] Running edu.svv.standings.StandingsCalculatorTest$Stats
+[INFO] Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.004 s -- in edu.svv.standings.StandingsCalculatorTest$Stats
+[INFO] Tests run: 0, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.042 s -- in edu.svv.standings.StandingsCalculatorTest
+[INFO] Running edu.svv.standings.cli.CoverageGapTest
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.015 s -- in edu.svv.standings.cli.CoverageGapTest
+[INFO] Running edu.svv.standings.cli.MainScenarioTest
+[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.014 s -- in edu.svv.standings.cli.MainScenarioTest
+[INFO] Running edu.svv.standings.cli.TableFormatterTest
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.003 s -- in edu.svv.standings.cli.TableFormatterTest
+[INFO] Running edu.svv.standings.cli.MainTest
+[INFO] Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.008 s -- in edu.svv.standings.cli.MainTest
+[INFO] Running edu.svv.standings.generator.CatalogueFlagsTest
+[INFO] Tests run: 17, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.023 s -- in edu.svv.standings.generator.CatalogueFlagsTest
+[INFO] Running edu.svv.standings.generator.PropertyBasedStandingsTest
+[INFO] Tests run: 248, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.111 s -- in edu.svv.standings.generator.PropertyBasedStandingsTest
+[INFO] Running edu.svv.standings.generator.MetamorphicStandingsTest
+[INFO] Tests run: 167, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.062 s -- in edu.svv.standings.generator.MetamorphicStandingsTest
+[INFO] Running edu.svv.standings.generator.ScenarioLibraryTest
+[INFO] Tests run: 34, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.027 s -- in edu.svv.standings.generator.ScenarioLibraryTest
+[INFO] Running edu.svv.standings.generator.CoverageGapTest
+[INFO] Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.008 s -- in edu.svv.standings.generator.CoverageGapTest
+[INFO] Running edu.svv.standings.generator.SeasonGeneratorTest
+[INFO] Tests run: 33, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.070 s -- in edu.svv.standings.generator.SeasonGeneratorTest
+[INFO] Running edu.svv.standings.generator.StrengthModelTest
+[INFO] Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.006 s -- in edu.svv.standings.generator.StrengthModelTest
+[INFO] Running edu.svv.standings.model.PointDeductionTest
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.021 s -- in edu.svv.standings.model.PointDeductionTest
+[INFO] Running edu.svv.standings.model.MatchResultTest
+[INFO] Tests run: 6, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.006 s -- in edu.svv.standings.model.MatchResultTest
+[INFO] Running edu.svv.standings.model.TeamTest
+[INFO] Tests run: 10, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.002 s -- in edu.svv.standings.model.TeamTest
+[INFO] Running edu.svv.standings.TieBreakMultiTeamTest
+[INFO] Running edu.svv.standings.TieBreakMultiTeamTest$TurkishAlphabeticalOrder
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.001 s -- in edu.svv.standings.TieBreakMultiTeamTest$TurkishAlphabeticalOrder
+[INFO] Running edu.svv.standings.TieBreakMultiTeamTest$ExtraRules
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.001 s -- in edu.svv.standings.TieBreakMultiTeamTest$ExtraRules
+[INFO] Running edu.svv.standings.TieBreakMultiTeamTest$NoReLookAtSubTies
+[INFO] Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0 s -- in edu.svv.standings.TieBreakMultiTeamTest$NoReLookAtSubTies
+[INFO] Running edu.svv.standings.TieBreakMultiTeamTest$ForfeitAndUnresolved
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.001 s -- in edu.svv.standings.TieBreakMultiTeamTest$ForfeitAndUnresolved
+[INFO] Running edu.svv.standings.TieBreakMultiTeamTest$CriterionOrder
+[INFO] Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.001 s -- in edu.svv.standings.TieBreakMultiTeamTest$CriterionOrder
+[INFO] Tests run: 0, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.004 s -- in edu.svv.standings.TieBreakMultiTeamTest
+[INFO] Running edu.svv.standings.TieBreakTwoTeamTest
+[INFO] Running edu.svv.standings.TieBreakTwoTeamTest$ExtraRules
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.001 s -- in edu.svv.standings.TieBreakTwoTeamTest$ExtraRules
+[INFO] Running edu.svv.standings.TieBreakTwoTeamTest$ForfeitAndUnresolved
+[INFO] Tests run: 4, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0 s -- in edu.svv.standings.TieBreakTwoTeamTest$ForfeitAndUnresolved
+[INFO] Running edu.svv.standings.TieBreakTwoTeamTest$OverallCriteria
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.001 s -- in edu.svv.standings.TieBreakTwoTeamTest$OverallCriteria
+[INFO] Running edu.svv.standings.TieBreakTwoTeamTest$HeadToHeadGoalDifference
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0 s -- in edu.svv.standings.TieBreakTwoTeamTest$HeadToHeadGoalDifference
+[INFO] Running edu.svv.standings.TieBreakTwoTeamTest$HeadToHeadPoints
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.001 s -- in edu.svv.standings.TieBreakTwoTeamTest$HeadToHeadPoints
+[INFO] Tests run: 0, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.003 s -- in edu.svv.standings.TieBreakTwoTeamTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 655, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] 
+[INFO] --- jar:3.4.2:jar (default-jar) @ tff-standings-engine ---
+[INFO] Building jar: ~/Desktop/Projeler/tff-standings-engine/target/tff-standings-engine-0.1.0-SNAPSHOT.jar
+[INFO] 
+[INFO] --- jacoco:0.8.13:report (report) @ tff-standings-engine ---
+[INFO] Loading execution data file ~/Desktop/Projeler/tff-standings-engine/target/jacoco.exec
+[INFO] Analyzed bundle 'tff-standings-engine' with 26 classes
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  2.677 s
+[INFO] Finished at: 2026-11-12T19:21:21+03:00
+[INFO] ------------------------------------------------------------------------

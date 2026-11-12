@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="tr"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TieBreaker.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">tff-standings-engine</a> &gt; <a href="index.source.html" class="el_package">edu.svv.standings</a> &gt; <span class="el_source">TieBreaker.java</span></div><h1>TieBreaker.java</h1><pre class="source lang-java linenums">package edu.svv.standings;
+
+import edu.svv.standings.model.MatchResult;
+import edu.svv.standings.model.Team;
+
+import java.text.Collator;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+
+/**
+ * Puanı eşit takımları FMT 9/2'ye göre sıralar (FR-09..FR-12).
+ */
+<span class="fc" id="L19">class TieBreaker {</span>
+
+    /** Eşit takımlar arasındaki maçlardan hesaplanan mini tablo değerleri. */
+    private static final class MiniStats {
+        int points;
+        int goalsFor;
+        int goalsAgainst;
+
+        int goalDifference() {
+<span class="fc" id="L28">            return goalsFor - goalsAgainst;</span>
+        }
+    }
+
+    /**
+     * Puanı eşit bir grubu sıralar ve hiçbir kriterle ayrılamayanları işaretler.
+     * Grup sadece bir kez ele alınır; alt eşitlikte mini tablo yeniden kurulmaz (FR-11).
+     */
+    List&lt;StandingRow&gt; order(List&lt;StandingRow&gt; tiedGroup, List&lt;MatchResult&gt; matches) {
+<span class="fc bfc" id="L37" title="All 2 branches covered.">        if (tiedGroup.size() &lt; 2) {</span>
+<span class="fc" id="L38">            return tiedGroup;</span>
+        }
+
+<span class="fc" id="L41">        Map&lt;Team, MiniStats&gt; mini = buildMiniTable(tiedGroup, matches);</span>
+
+        // FMT 9/2-b: mini puan → mini averaj → mini atılan gol → genel averaj → genel atılan gol → hükmen yenilgisi olmayan
+        // İki takımda (9/2-a) mini tablo = ikili maçlar. İkili averaj eşitse iki takımın ikili attığı goller
+        // de zorunlu olarak eşittir, bu yüzden aynı sıra 9/2-a ile aynı sonucu verir.
+<span class="fc" id="L46">        Comparator&lt;StandingRow&gt; criteria = Comparator</span>
+<span class="fc" id="L47">                .comparingInt((StandingRow r) -&gt; mini.get(r.getTeam()).points).reversed()</span>
+<span class="fc" id="L48">                .thenComparing(Comparator.comparingInt((StandingRow r) -&gt; mini.get(r.getTeam()).goalDifference()).reversed())</span>
+<span class="fc" id="L49">                .thenComparing(Comparator.comparingInt((StandingRow r) -&gt; mini.get(r.getTeam()).goalsFor).reversed())</span>
+<span class="fc" id="L50">                .thenComparing(Comparator.comparingInt(StandingRow::getGoalDifference).reversed())</span>
+<span class="fc" id="L51">                .thenComparing(Comparator.comparingInt(StandingRow::getGoalsFor).reversed())</span>
+<span class="fc" id="L52">                .thenComparing(StandingRow::hasForfeitLoss);</span>
+
+<span class="fc" id="L54">        List&lt;StandingRow&gt; ordered = new ArrayList&lt;&gt;(tiedGroup);</span>
+        // D-02: kriterlerle ayrılamayanlar sadece görüntü için alfabetik dizilir
+        // DEF-001: String.compareTo kod noktası sırası kullanıyordu (Ç, İ, Ş, Ü Z'den sonra geliyordu);
+        // Türkçe alfabe için tr-TR Collator kullanılır. FMT kriter karşılaştırıcısı (criteria) değişmedi.
+<span class="fc" id="L58">        Collator turkish = Collator.getInstance(Locale.forLanguageTag(&quot;tr-TR&quot;));</span>
+<span class="fc" id="L59">        ordered.sort(criteria.thenComparing(r -&gt; r.getTeam().name(), turkish));</span>
+
+        // FR-12: komşusuyla tüm kriterlerde eşit olan takım &quot;çözülemedi&quot; olarak işaretlenir
+<span class="fc bfc" id="L62" title="All 2 branches covered.">        for (int i = 0; i &lt; ordered.size() - 1; i++) {</span>
+<span class="fc bfc" id="L63" title="All 2 branches covered.">            if (criteria.compare(ordered.get(i), ordered.get(i + 1)) == 0) {</span>
+<span class="fc" id="L64">                ordered.get(i).setUnresolved(true);</span>
+<span class="fc" id="L65">                ordered.get(i + 1).setUnresolved(true);</span>
+            }
+        }
+<span class="fc" id="L68">        return ordered;</span>
+    }
+
+    private Map&lt;Team, MiniStats&gt; buildMiniTable(List&lt;StandingRow&gt; tiedGroup, List&lt;MatchResult&gt; matches) {
+<span class="fc" id="L72">        Set&lt;Team&gt; tiedTeams = new HashSet&lt;&gt;();</span>
+<span class="fc" id="L73">        Map&lt;Team, MiniStats&gt; mini = new HashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L74" title="All 2 branches covered.">        for (StandingRow row : tiedGroup) {</span>
+<span class="fc" id="L75">            tiedTeams.add(row.getTeam());</span>
+<span class="fc" id="L76">            mini.put(row.getTeam(), new MiniStats());</span>
+<span class="fc" id="L77">        }</span>
+
+<span class="fc bfc" id="L79" title="All 2 branches covered.">        for (MatchResult match : matches) {</span>
+            // sadece eşit takımların kendi aralarındaki maçlar sayılır
+<span class="fc bfc" id="L81" title="All 4 branches covered.">            if (!tiedTeams.contains(match.homeTeam()) || !tiedTeams.contains(match.awayTeam())) {</span>
+<span class="fc" id="L82">                continue;</span>
+            }
+            // hükmen düzeltilmiş skor kullanılır (FR-06)
+<span class="fc" id="L85">            int homeGoals = StandingsCalculator.adjustedHomeGoals(match);</span>
+<span class="fc" id="L86">            int awayGoals = StandingsCalculator.adjustedAwayGoals(match);</span>
+
+<span class="fc" id="L88">            MiniStats home = mini.get(match.homeTeam());</span>
+<span class="fc" id="L89">            MiniStats away = mini.get(match.awayTeam());</span>
+<span class="fc" id="L90">            home.goalsFor += homeGoals;</span>
+<span class="fc" id="L91">            home.goalsAgainst += awayGoals;</span>
+<span class="fc" id="L92">            away.goalsFor += awayGoals;</span>
+<span class="fc" id="L93">            away.goalsAgainst += homeGoals;</span>
+
+<span class="fc bfc" id="L95" title="All 2 branches covered.">            if (homeGoals &gt; awayGoals) {</span>
+<span class="fc" id="L96">                home.points += 3;</span>
+<span class="fc bfc" id="L97" title="All 2 branches covered.">            } else if (homeGoals &lt; awayGoals) {</span>
+<span class="fc" id="L98">                away.points += 3;</span>
+            } else {
+<span class="fc" id="L100">                home.points++;</span>
+<span class="fc" id="L101">                away.points++;</span>
+            }
+<span class="fc" id="L103">        }</span>
+<span class="fc" id="L104">        return mini;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

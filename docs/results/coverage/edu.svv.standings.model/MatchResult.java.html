@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="tr"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MatchResult.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">tff-standings-engine</a> &gt; <a href="index.source.html" class="el_package">edu.svv.standings.model</a> &gt; <span class="el_source">MatchResult.java</span></div><h1>MatchResult.java</h1><pre class="source lang-java linenums">package edu.svv.standings.model;
+
+/**
+ * Oynanmış (ya da hükmen tescil edilmiş) bir maçın sonucu (FR-02).
+ * Goller sahada atılan gerçek gollerdir; hükmen düzeltmesi hesaplayıcıda yapılır (FR-06).
+ */
+public record MatchResult(Team homeTeam, Team awayTeam, int homeGoals, int awayGoals, Forfeit forfeit) {
+
+<span class="fc" id="L9">    public MatchResult {</span>
+        // V-01: alanlar null olamaz
+<span class="fc bfc" id="L11" title="All 4 branches covered.">        if (homeTeam == null || awayTeam == null) {</span>
+<span class="fc" id="L12">            throw new IllegalArgumentException(&quot;Teams must not be null&quot;);</span>
+        }
+        // V-04: takım kendisiyle oynayamaz
+<span class="fc bfc" id="L15" title="All 2 branches covered.">        if (homeTeam.equals(awayTeam)) {</span>
+<span class="fc" id="L16">            throw new IllegalArgumentException(&quot;A team cannot play against itself: &quot; + homeTeam.name());</span>
+        }
+        // V-05: gol sayısı negatif olamaz
+<span class="fc bfc" id="L19" title="All 4 branches covered.">        if (homeGoals &lt; 0 || awayGoals &lt; 0) {</span>
+<span class="fc" id="L20">            throw new IllegalArgumentException(&quot;Goals must not be negative&quot;);</span>
+        }
+        // hükmen bilgisi verilmemişse normal maç kabul edilir
+<span class="fc bfc" id="L23" title="All 2 branches covered.">        if (forfeit == null) {</span>
+<span class="fc" id="L24">            forfeit = Forfeit.NONE;</span>
+        }
+<span class="fc" id="L26">    }</span>
+
+    /** Hükmen olmayan normal maç için kısa yol. */
+    public MatchResult(Team homeTeam, Team awayTeam, int homeGoals, int awayGoals) {
+<span class="fc" id="L30">        this(homeTeam, awayTeam, homeGoals, awayGoals, Forfeit.NONE);</span>
+<span class="fc" id="L31">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="tr"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>StrengthModel.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">tff-standings-engine</a> &gt; <a href="index.source.html" class="el_package">edu.svv.standings.generator</a> &gt; <span class="el_source">StrengthModel.java</span></div><h1>StrengthModel.java</h1><pre class="source lang-java linenums">package edu.svv.standings.generator;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
+
+/**
+ * Takım gücü modeli: son 10 Süper Lig sezonunun (2016-17..2025-26) gerçek tablolarından
+ * 2026-27 kulüplerinin hücum / savunma gücünü hesaplar.
+ *
+ * Modelleme kararları (ayrıntı: docs/generator.md):
+ * - Hücum = toplam atılan gol / toplam oynanan maç, savunma = toplam yenilen gol / toplam oynanan maç,
+ *   yalnızca kulübün pencere içindeki Süper Lig sezonları üzerinden (havuzlanmış ortalama; sezonlar
+ *   34–40 maç sürdüğü için sezon ortalamalarının ortalaması yerine maç ağırlıklı ortalama alınır).
+ * - Pencerede hiç Süper Lig sezonu olmayan kulüpler (Amed SFK, Çorum FK) için &quot;yeni çıkan takım&quot; ortalaması:
+ *   t ≥ 2017-18 olmak üzere t sezonunda olup t-1 sezonunda olmayan her kulübün t sezonundaki satırı.
+ *   Bu satırların aynı şekilde havuzlanmış ortalaması kullanılır.
+ * - Lig ortalaması μ = penceredeki tüm satırların toplam golü / toplam maçı (takım başına maç başına gol).
+ * - Veri tablolardaki gibi alınır; 2022-23'te ligden çekilen Gaziantep FK ve Hatayspor'un satırları
+ *   (hükmen yenilgiler dahil) değiştirilmeden kullanılır. Bu, Gaziantep FK'nin gücünü biraz düşürür (varsayım: kabul edildi).
+ */
+public final class StrengthModel {
+
+    public static final String SEASONS_RESOURCE = &quot;/strength/super-lig-seasons.csv&quot;;
+    public static final String CLUBS_RESOURCE = &quot;/strength/super-lig-2026-27-clubs.txt&quot;;
+
+    private final Map&lt;String, TeamStrength&gt; strengths;
+    private final double leagueMeanGoals;
+    private final TeamStrength promotedAverage;
+
+<span class="fc" id="L42">    private StrengthModel(Map&lt;String, TeamStrength&gt; strengths, double leagueMeanGoals, TeamStrength promotedAverage) {</span>
+<span class="fc" id="L43">        this.strengths = strengths;</span>
+<span class="fc" id="L44">        this.leagueMeanGoals = leagueMeanGoals;</span>
+<span class="fc" id="L45">        this.promotedAverage = promotedAverage;</span>
+<span class="fc" id="L46">    }</span>
+
+    /** Sınıf yolundaki gerçek veriden modeli kurar; sonuç önbelleğe alınır (veri değişmez). */
+    public static StrengthModel loadDefault() {
+<span class="fc" id="L50">        return DefaultHolder.INSTANCE;</span>
+    }
+
+    // tembel ve iş parçacığı güvenli tek seferlik yükleme
+    private static final class DefaultHolder {
+<span class="fc" id="L55">        private static final StrengthModel INSTANCE =</span>
+<span class="fc" id="L56">                fromLines(readResource(SEASONS_RESOURCE), readResource(CLUBS_RESOURCE));</span>
+    }
+
+    /**
+     * Satır listelerinden model kurar.
+     *
+     * @param seasonLines başlıklı sezon CSV'si: season;club;position;played;won;drawn;lost;goalsFor;goalsAgainst;points
+     * @param clubLines   her satırda bir kulüp adı (boş satırlar atlanır)
+     */
+    public static StrengthModel fromLines(List&lt;String&gt; seasonLines, List&lt;String&gt; clubLines) {
+<span class="fc" id="L66">        List&lt;Row&gt; rows = parseRows(seasonLines);</span>
+<span class="fc bfc" id="L67" title="All 2 branches covered.">        if (rows.isEmpty()) {</span>
+<span class="fc" id="L68">            throw new IllegalArgumentException(&quot;Season data is empty&quot;);</span>
+        }
+
+        // lig ortalaması: tüm satırların toplamı
+<span class="fc" id="L72">        double mu = sum(rows, Row::goalsFor) / sum(rows, Row::played);</span>
+
+        // sezon -&gt; o sezondaki kulüpler (sezon adları &quot;2016-17&quot; biçiminde, sözlük sırası kronolojiktir)
+<span class="fc" id="L75">        Map&lt;String, Set&lt;String&gt;&gt; clubsBySeason = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L76" title="All 2 branches covered.">        for (String season : new TreeSet&lt;&gt;(rows.stream().map(Row::season).toList())) {</span>
+<span class="fc" id="L77">            clubsBySeason.put(season, new HashSet&lt;&gt;());</span>
+<span class="fc" id="L78">        }</span>
+<span class="fc bfc" id="L79" title="All 2 branches covered.">        for (Row r : rows) {</span>
+<span class="fc" id="L80">            clubsBySeason.get(r.season()).add(r.club());</span>
+<span class="fc" id="L81">        }</span>
+<span class="fc" id="L82">        List&lt;String&gt; seasons = new ArrayList&lt;&gt;(clubsBySeason.keySet());</span>
+
+        // yeni çıkan takımların ilk sezonu: t sezonunda olup t-1'de olmayanlar (ilk sezonun öncesi bilinmediği için t ≥ 2. sezon)
+<span class="fc" id="L85">        List&lt;Row&gt; promotedRows = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L86" title="All 2 branches covered.">        for (Row r : rows) {</span>
+<span class="fc" id="L87">            int idx = seasons.indexOf(r.season());</span>
+<span class="fc bfc" id="L88" title="All 4 branches covered.">            if (idx &gt;= 1 &amp;&amp; !clubsBySeason.get(seasons.get(idx - 1)).contains(r.club())) {</span>
+<span class="fc" id="L89">                promotedRows.add(r);</span>
+            }
+<span class="fc" id="L91">        }</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">        if (promotedRows.isEmpty()) {</span>
+<span class="fc" id="L93">            throw new IllegalArgumentException(&quot;No promoted clubs found in the season data&quot;);</span>
+        }
+<span class="fc" id="L95">        TeamStrength promoted = aggregate(&quot;(promoted average)&quot;, promotedRows);</span>
+
+<span class="fc" id="L97">        Map&lt;String, TeamStrength&gt; result = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L98" title="All 2 branches covered.">        for (String line : clubLines) {</span>
+<span class="fc" id="L99">            String club = line.strip();</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">            if (club.isEmpty()) {</span>
+<span class="fc" id="L101">                continue;</span>
+            }
+<span class="fc" id="L103">            List&lt;Row&gt; own = rows.stream().filter(r -&gt; r.club().equals(club)).toList();</span>
+<span class="fc bfc" id="L104" title="All 2 branches covered.">            if (own.isEmpty()) {</span>
+                // geçmişi olmayan kulüp: yeni çıkan takım ortalaması, kulübün kendi adıyla
+<span class="fc" id="L106">                result.put(club, new TeamStrength(club, promoted.attack(), promoted.defence(),</span>
+<span class="fc" id="L107">                        promoted.pointsPerGame(), promoted.averagePosition(), 0, true));</span>
+            } else {
+<span class="fc" id="L109">                result.put(club, aggregate(club, own));</span>
+            }
+<span class="fc" id="L111">        }</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">        if (result.isEmpty()) {</span>
+<span class="fc" id="L113">            throw new IllegalArgumentException(&quot;Club list is empty&quot;);</span>
+        }
+<span class="fc" id="L115">        return new StrengthModel(Collections.unmodifiableMap(result), mu, promoted);</span>
+    }
+
+    /** Kulüpler, kulüp dosyasındaki sırayla. */
+    public List&lt;TeamStrength&gt; strengths() {
+<span class="fc" id="L120">        return List.copyOf(strengths.values());</span>
+    }
+
+    public TeamStrength strengthOf(String club) {
+<span class="fc" id="L124">        TeamStrength s = strengths.get(club);</span>
+<span class="fc bfc" id="L125" title="All 2 branches covered.">        if (s == null) {</span>
+<span class="fc" id="L126">            throw new IllegalArgumentException(&quot;Unknown club: &quot; + club);</span>
+        }
+<span class="fc" id="L128">        return s;</span>
+    }
+
+    /** μ: takım başına maç başına ortalama gol (pencerenin tamamı). */
+    public double leagueMeanGoals() {
+<span class="fc" id="L133">        return leagueMeanGoals;</span>
+    }
+
+    /** Yeni çıkan takımların ilk Süper Lig sezonu ortalaması (geçmişi olmayan kulüpler için kullanılan değer). */
+    public TeamStrength promotedAverage() {
+<span class="fc" id="L138">        return promotedAverage;</span>
+    }
+
+    // --- yardımcılar ---
+
+<span class="fc" id="L143">    private record Row(String season, String club, int position, int played, int won, int drawn,</span>
+                       int goalsFor, int goalsAgainst) {
+    }
+
+    private static TeamStrength aggregate(String club, List&lt;Row&gt; rows) {
+<span class="fc" id="L148">        double played = sum(rows, Row::played);</span>
+<span class="fc" id="L149">        double attack = sum(rows, Row::goalsFor) / played;</span>
+<span class="fc" id="L150">        double defence = sum(rows, Row::goalsAgainst) / played;</span>
+        // puan silmeler gücü değil disiplini yansıttığı için puan 3G + B olarak yeniden hesaplanır
+<span class="fc" id="L152">        double ppg = (3 * sum(rows, Row::won) + sum(rows, Row::drawn)) / played;</span>
+<span class="fc" id="L153">        double avgPos = sum(rows, Row::position) / rows.size();</span>
+<span class="fc" id="L154">        return new TeamStrength(club, attack, defence, ppg, avgPos, rows.size(), false);</span>
+    }
+
+    private static double sum(List&lt;Row&gt; rows, java.util.function.ToIntFunction&lt;Row&gt; f) {
+<span class="fc" id="L158">        return rows.stream().mapToInt(f).sum();</span>
+    }
+
+    private static List&lt;Row&gt; parseRows(List&lt;String&gt; lines) {
+<span class="fc" id="L162">        List&lt;Row&gt; rows = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L163" title="All 2 branches covered.">        for (int i = 0; i &lt; lines.size(); i++) {</span>
+<span class="fc" id="L164">            String line = lines.get(i).strip();</span>
+            // ilk satır başlıktır; boş satırlar atlanır
+<span class="fc bfc" id="L166" title="All 4 branches covered.">            if (i == 0 || line.isEmpty()) {</span>
+<span class="fc" id="L167">                continue;</span>
+            }
+<span class="fc" id="L169">            String[] f = line.split(&quot;;&quot;, -1);</span>
+<span class="fc bfc" id="L170" title="All 2 branches covered.">            if (f.length != 10) {</span>
+<span class="fc" id="L171">                throw new IllegalArgumentException(&quot;Season data line &quot; + (i + 1) + &quot;: expected 10 fields&quot;);</span>
+            }
+            try {
+<span class="fc" id="L174">                rows.add(new Row(f[0].strip(), f[1].strip(), Integer.parseInt(f[2].strip()),</span>
+<span class="fc" id="L175">                        Integer.parseInt(f[3].strip()), Integer.parseInt(f[4].strip()),</span>
+<span class="fc" id="L176">                        Integer.parseInt(f[5].strip()), Integer.parseInt(f[7].strip()),</span>
+<span class="fc" id="L177">                        Integer.parseInt(f[8].strip())));</span>
+<span class="fc" id="L178">            } catch (NumberFormatException e) {</span>
+<span class="fc" id="L179">                throw new IllegalArgumentException(&quot;Season data line &quot; + (i + 1) + &quot;: &quot; + e.getMessage(), e);</span>
+<span class="fc" id="L180">            }</span>
+        }
+<span class="fc" id="L182">        return rows;</span>
+    }
+
+    private static List&lt;String&gt; readResource(String name) {
+<span class="fc" id="L186">        InputStream in = StrengthModel.class.getResourceAsStream(name);</span>
+<span class="pc bpc" id="L187" title="1 of 2 branches missed.">        if (in == null) {</span>
+<span class="nc" id="L188">            throw new IllegalStateException(&quot;Resource not found on classpath: &quot; + name);</span>
+        }
+<span class="fc" id="L190">        try (BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {</span>
+<span class="fc" id="L191">            return reader.lines().toList();</span>
+<span class="nc" id="L192">        } catch (IOException e) {</span>
+<span class="nc" id="L193">            throw new UncheckedIOException(e);</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

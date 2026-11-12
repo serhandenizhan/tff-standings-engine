@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="tr"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RealismCheck.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">tff-standings-engine</a> &gt; <a href="index.source.html" class="el_package">edu.svv.standings.generator</a> &gt; <span class="el_source">RealismCheck.java</span></div><h1>RealismCheck.java</h1><pre class="source lang-java linenums">package edu.svv.standings.generator;
+
+import edu.svv.standings.StandingRow;
+import edu.svv.standings.StandingsCalculator;
+import edu.svv.standings.model.MatchResult;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+
+/**
+ * Üretecin gerçekçilik kontrolü (yalnızca belgeleme / doğrulama; sonuçlar docs/generator.md'ye kopyalanır).
+ * N tam sezon üretir, her kulübün ortalama simülasyon sırasını gerçek ortalama sıra / puanla yan yana koyar
+ * ve güç sıralamasında son 5'teki bir kulübün şampiyon olma sıklığını sayar.
+ *
+ * Sıralama için StandingsCalculator yalnızca BURADA kullanılır; üreteç ve kütüphane sınıflandırıcısı onu çağırmaz.
+ *
+ * Çalıştırma: java -cp target/classes edu.svv.standings.generator.RealismCheck [sezon sayısı, varsayılan 200]
+ */
+public final class RealismCheck {
+
+    public static void main(String[] args) {
+<span class="nc bnc" id="L26" title="All 2 branches missed.">        int seasons = args.length &gt; 0 ? Integer.parseInt(args[0]) : 200;</span>
+<span class="nc" id="L27">        StrengthModel model = StrengthModel.loadDefault();</span>
+<span class="nc" id="L28">        StandingsCalculator calculator = new StandingsCalculator();</span>
+
+<span class="nc" id="L30">        Map&lt;String, Integer&gt; positionSum = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L31">        Map&lt;String, Integer&gt; pointsSum = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L32">        Map&lt;String, Integer&gt; titles = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L33">        Map&lt;String, Integer&gt; bottomThree = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L34">        long goals = 0;</span>
+<span class="nc" id="L35">        long matches = 0;</span>
+<span class="nc" id="L36">        long homeGoals = 0;</span>
+
+<span class="nc bnc" id="L38" title="All 2 branches missed.">        for (long seed = 1; seed &lt;= seasons; seed++) {</span>
+<span class="nc" id="L39">            GeneratedSeason s = new SeasonGenerator(seed, model).generateFullSeason();</span>
+<span class="nc bnc" id="L40" title="All 2 branches missed.">            for (MatchResult m : s.matches()) {</span>
+<span class="nc" id="L41">                goals += m.homeGoals() + m.awayGoals();</span>
+<span class="nc" id="L42">                homeGoals += m.homeGoals();</span>
+<span class="nc" id="L43">                matches++;</span>
+<span class="nc" id="L44">            }</span>
+<span class="nc" id="L45">            List&lt;StandingRow&gt; table = calculator.calculate(s.teams(), s.matches(), s.deductions());</span>
+<span class="nc" id="L46">            int n = table.size();</span>
+<span class="nc bnc" id="L47" title="All 2 branches missed.">            for (int i = 0; i &lt; n; i++) {</span>
+<span class="nc" id="L48">                StandingRow row = table.get(i);</span>
+<span class="nc" id="L49">                String club = row.getTeam().name();</span>
+                // çözülemeyen eşitlikte konum aynı olabilir; listede gerçek sıra (i+1) kullanılır
+<span class="nc" id="L51">                positionSum.merge(club, i + 1, Integer::sum);</span>
+<span class="nc" id="L52">                pointsSum.merge(club, row.getPoints(), Integer::sum);</span>
+<span class="nc bnc" id="L53" title="All 2 branches missed.">                if (i == 0) {</span>
+<span class="nc" id="L54">                    titles.merge(club, 1, Integer::sum);</span>
+                }
+<span class="nc bnc" id="L56" title="All 2 branches missed.">                if (i &gt;= n - 3) {</span>
+<span class="nc" id="L57">                    bottomThree.merge(club, 1, Integer::sum);</span>
+                }
+            }
+        }
+
+        // güç sıralaması: maç başına gol farkı (hücum − savunma), yüksekten düşüğe
+<span class="nc" id="L63">        List&lt;TeamStrength&gt; byStrength = new ArrayList&lt;&gt;(model.strengths());</span>
+<span class="nc" id="L64">        byStrength.sort(Comparator.comparingDouble(TeamStrength::goalDifferencePerGame).reversed());</span>
+
+<span class="nc" id="L66">        StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L67">        sb.append(String.format(Locale.ROOT, &quot;Seasons: %d, mu = %.3f goals per team per match, H = %.2f%n&quot;,</span>
+<span class="nc" id="L68">                seasons, model.leagueMeanGoals(), SeasonGenerator.HOME_ADVANTAGE));</span>
+<span class="nc" id="L69">        sb.append(String.format(Locale.ROOT,</span>
+                &quot;Simulated goals per match: %.2f (real window: %.2f), home share of goals: %.1f%%%n%n&quot;,
+<span class="nc" id="L71">                (double) goals / matches, 2 * model.leagueMeanGoals(), 100.0 * homeGoals / goals));</span>
+<span class="nc" id="L72">        sb.append(&quot;| Strength rank | Club | Real seasons | Attack | Defence | Real avg pos | Real PPG &quot;</span>
+                + &quot;| Sim avg pos | Sim PPG | Titles | Bottom 3 |\n&quot;);
+<span class="nc" id="L74">        sb.append(&quot;|---|---|---|---|---|---|---|---|---|---|---|\n&quot;);</span>
+<span class="nc" id="L75">        int titlesBottomFive = 0;</span>
+<span class="nc bnc" id="L76" title="All 2 branches missed.">        for (int i = 0; i &lt; byStrength.size(); i++) {</span>
+<span class="nc" id="L77">            TeamStrength t = byStrength.get(i);</span>
+<span class="nc" id="L78">            String club = t.club();</span>
+<span class="nc" id="L79">            int played = 2 * (byStrength.size() - 1);</span>
+<span class="nc bnc" id="L80" title="All 2 branches missed.">            String seasonsText = t.fromPromotedAverage() ? &quot;0 (promoted avg)&quot; : String.valueOf(t.seasons());</span>
+<span class="nc" id="L81">            int clubTitles = titles.getOrDefault(club, 0);</span>
+<span class="nc bnc" id="L82" title="All 2 branches missed.">            if (i &gt;= byStrength.size() - 5) {</span>
+<span class="nc" id="L83">                titlesBottomFive += clubTitles;</span>
+            }
+<span class="nc" id="L85">            sb.append(String.format(Locale.ROOT, &quot;| %d | %s | %s | %.2f | %.2f | %.1f | %.2f | %.1f | %.2f | %d | %d |%n&quot;,</span>
+<span class="nc" id="L86">                    i + 1, club, seasonsText, t.attack(), t.defence(), t.averagePosition(), t.pointsPerGame(),</span>
+<span class="nc" id="L87">                    (double) positionSum.getOrDefault(club, 0) / seasons,</span>
+<span class="nc" id="L88">                    (double) pointsSum.getOrDefault(club, 0) / seasons / played,</span>
+<span class="nc" id="L89">                    clubTitles, bottomThree.getOrDefault(club, 0)));</span>
+        }
+<span class="nc" id="L91">        sb.append(String.format(Locale.ROOT, &quot;%nTitles won by a bottom-5-strength club: %d of %d seasons (%.1f%%)%n&quot;,</span>
+<span class="nc" id="L92">                titlesBottomFive, seasons, 100.0 * titlesBottomFive / seasons));</span>
+<span class="nc" id="L93">        System.out.print(sb);</span>
+<span class="nc" id="L94">    }</span>
+
+    private RealismCheck() {
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

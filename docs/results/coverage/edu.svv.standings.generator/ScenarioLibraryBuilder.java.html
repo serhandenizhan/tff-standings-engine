@@ -1,0 +1,289 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="tr"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ScenarioLibraryBuilder.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">tff-standings-engine</a> &gt; <a href="index.source.html" class="el_package">edu.svv.standings.generator</a> &gt; <span class="el_source">ScenarioLibraryBuilder.java</span></div><h1>ScenarioLibraryBuilder.java</h1><pre class="source lang-java linenums">package edu.svv.standings.generator;
+
+import edu.svv.standings.model.Forfeit;
+import edu.svv.standings.model.MatchResult;
+import edu.svv.standings.model.PointDeduction;
+import edu.svv.standings.model.Team;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+
+/**
+ * Senaryo kütüphanesini oluşturur: seed'leri ve hafta sayılarını tarar, her sezonu küçük ve bağımsız bir
+ * sınıflandırıcıyla etiketler, çeşitliliği sağlayan 12 sezonu seçip CSV olarak yazar.
+ *
+ * Çalıştırma (proje kökünden, önce mvn package):
+ * &lt;pre&gt;java -cp target/classes edu.svv.standings.generator.ScenarioLibraryBuilder [çıktı klasörü]&lt;/pre&gt;
+ * Varsayılan çıktı: src/main/resources/scenarios
+ *
+ * Sınıflandırıcı StandingsCalculator / TieBreaker'ı BİLEREK çağırmaz (test edilen kodla kütüphane seçimi
+ * birbirine bağlanmasın). Yalnızca ham puanı (3G + B − silinen) ve kaba bayrakları hesaplar.
+ */
+<span class="nc" id="L33">public final class ScenarioLibraryBuilder {</span>
+
+    // --- bayraklar (katalogdaki yazımlarıyla) ---
+    public static final String NO_TIE = &quot;NO_TIE&quot;;
+    public static final String TIE_2 = &quot;TIE_2&quot;;
+    public static final String TIE_3PLUS = &quot;TIE_3PLUS&quot;;
+    public static final String FORFEIT = &quot;FORFEIT&quot;;
+    public static final String DEDUCTION = &quot;DEDUCTION&quot;;
+    public static final String LIKELY_UNRESOLVED = &quot;LIKELY_UNRESOLVED&quot;;
+
+    /** Taranacak en büyük seed (1..MAX_SEED). */
+    private static final int MAX_SEED = 20_000;
+
+    /**
+     * Seçim kuralı: her senaryo için izin verilen hafta sayıları, zorunlu ve yasak bayraklar.
+     * Seed'ler 1'den başlayarak taranır, ilk uyan ve daha önce kullanılmamış seed alınır (deterministik).
+     */
+<span class="nc" id="L50">    private record Spec(String id, int[] rounds, Set&lt;String&gt; required, Set&lt;String&gt; forbidden, String purpose) {</span>
+    }
+
+<span class="nc" id="L53">    private static final List&lt;Spec&gt; SPECS = List.of(</span>
+<span class="nc" id="L54">            new Spec(&quot;S01&quot;, new int[] {34}, Set.of(NO_TIE), Set.of(FORFEIT, DEDUCTION),</span>
+                    &quot;full season, no points tie at all&quot;),
+<span class="nc" id="L56">            new Spec(&quot;S02&quot;, new int[] {34}, Set.of(TIE_2), Set.of(TIE_3PLUS, FORFEIT, DEDUCTION),</span>
+                    &quot;full season, only 2-team ties&quot;),
+<span class="nc" id="L58">            new Spec(&quot;S03&quot;, new int[] {34}, Set.of(TIE_3PLUS), Set.of(DEDUCTION),</span>
+                    &quot;full season with a 3+-team tie&quot;),
+<span class="nc" id="L60">            new Spec(&quot;S04&quot;, new int[] {34}, Set.of(TIE_2, TIE_3PLUS, FORFEIT, DEDUCTION, LIKELY_UNRESOLVED), Set.of(),</span>
+                    &quot;full season containing everything&quot;),
+<span class="nc" id="L62">            new Spec(&quot;S05&quot;, new int[] {34}, Set.of(FORFEIT, DEDUCTION), Set.of(TIE_3PLUS),</span>
+                    &quot;full season, forfeit + deduction, no 3+-team tie&quot;),
+<span class="nc" id="L64">            new Spec(&quot;S06&quot;, new int[] {1}, Set.of(LIKELY_UNRESOLVED), Set.of(),</span>
+                    &quot;round 1, likely fully unresolved group&quot;),
+<span class="nc" id="L66">            new Spec(&quot;S07&quot;, new int[] {2}, Set.of(TIE_3PLUS, FORFEIT), Set.of(),</span>
+                    &quot;round 2, early table with a forfeit&quot;),
+<span class="nc" id="L68">            new Spec(&quot;S08&quot;, new int[] {3}, Set.of(LIKELY_UNRESOLVED, DEDUCTION), Set.of(),</span>
+                    &quot;round 3, likely unresolved group and an early deduction&quot;),
+<span class="nc" id="L70">            new Spec(&quot;S09&quot;, new int[] {9, 10, 11, 12}, Set.of(TIE_2), Set.of(TIE_3PLUS),</span>
+                    &quot;first third, only 2-team ties&quot;),
+<span class="nc" id="L72">            new Spec(&quot;S10&quot;, new int[] {17}, Set.of(TIE_3PLUS, FORFEIT, DEDUCTION), Set.of(),</span>
+                    &quot;half season (end of first half), forfeit + deduction&quot;),
+<span class="nc" id="L74">            new Spec(&quot;S11&quot;, new int[] {25, 26, 27}, Set.of(LIKELY_UNRESOLVED), Set.of(),</span>
+                    &quot;late mid-season, likely unresolved group&quot;),
+<span class="nc" id="L76">            new Spec(&quot;S12&quot;, new int[] {30, 31, 32, 33}, Set.of(TIE_2, TIE_3PLUS, FORFEIT), Set.of(DEDUCTION),</span>
+                    &quot;run-in, several ties and a forfeit&quot;));
+
+    public static void main(String[] args) throws IOException {
+<span class="nc bnc" id="L80" title="All 2 branches missed.">        Path out = Path.of(args.length &gt; 0 ? args[0] : &quot;src/main/resources/scenarios&quot;);</span>
+<span class="nc" id="L81">        StrengthModel model = StrengthModel.loadDefault();</span>
+
+<span class="nc" id="L83">        Set&lt;Long&gt; usedSeeds = new HashSet&lt;&gt;();</span>
+<span class="nc" id="L84">        List&lt;String&gt; catalogue = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L85">        catalogue.add(&quot;id;seed;rounds;flags;description&quot;);</span>
+<span class="nc" id="L86">        StringBuilder table = new StringBuilder();</span>
+<span class="nc" id="L87">        table.append(&quot;| ID | Seed | Rounds | Flags | Description |\n|---|---|---|---|---|\n&quot;);</span>
+
+<span class="nc bnc" id="L89" title="All 2 branches missed.">        for (Spec spec : SPECS) {</span>
+<span class="nc" id="L90">            Selection found = search(spec, model, usedSeeds);</span>
+<span class="nc bnc" id="L91" title="All 2 branches missed.">            if (found == null) {</span>
+<span class="nc" id="L92">                throw new IllegalStateException(&quot;No season found for &quot; + spec.id() + &quot; (&quot; + spec.purpose()</span>
+                        + &quot;) within seeds 1..&quot; + MAX_SEED);
+            }
+<span class="nc" id="L95">            usedSeeds.add(found.seed());</span>
+<span class="nc" id="L96">            Classification c = found.classification();</span>
+            // açıklamada &quot;;&quot; olamaz (katalog ayırıcısı)
+<span class="nc" id="L98">            String description = spec.purpose() + &quot; - &quot; + c.summary();</span>
+<span class="nc" id="L99">            found.season().writeCsv(out.resolve(spec.id()));</span>
+<span class="nc" id="L100">            String flags = String.join(&quot;,&quot;, c.flags());</span>
+<span class="nc" id="L101">            catalogue.add(spec.id() + &quot;;&quot; + found.seed() + &quot;;&quot; + found.rounds() + &quot;;&quot; + flags + &quot;;&quot; + description);</span>
+<span class="nc" id="L102">            table.append(&quot;| &quot;).append(spec.id()).append(&quot; | &quot;).append(found.seed()).append(&quot; | &quot;)</span>
+<span class="nc" id="L103">                    .append(found.rounds()).append(&quot; | &quot;).append(flags.replace(&quot;,&quot;, &quot;, &quot;)).append(&quot; | &quot;)</span>
+<span class="nc" id="L104">                    .append(description).append(&quot; |\n&quot;);</span>
+<span class="nc" id="L105">        }</span>
+
+<span class="nc" id="L107">        Files.createDirectories(out);</span>
+<span class="nc" id="L108">        Files.writeString(out.resolve(&quot;catalogue.csv&quot;), String.join(&quot;\n&quot;, catalogue) + &quot;\n&quot;, StandardCharsets.UTF_8);</span>
+<span class="nc" id="L109">        System.out.println(&quot;Wrote &quot; + SPECS.size() + &quot; scenarios to &quot; + out.toAbsolutePath());</span>
+<span class="nc" id="L110">        System.out.print(table);</span>
+<span class="nc" id="L111">    }</span>
+
+<span class="nc" id="L113">    private record Selection(long seed, int rounds, GeneratedSeason season, Classification classification) {</span>
+    }
+
+    private static Selection search(Spec spec, StrengthModel model, Set&lt;Long&gt; usedSeeds) {
+<span class="nc bnc" id="L117" title="All 2 branches missed.">        for (long seed = 1; seed &lt;= MAX_SEED; seed++) {</span>
+<span class="nc bnc" id="L118" title="All 2 branches missed.">            if (usedSeeds.contains(seed)) {</span>
+<span class="nc" id="L119">                continue;</span>
+            }
+<span class="nc" id="L121">            SeasonGenerator generator = new SeasonGenerator(seed, model);</span>
+<span class="nc bnc" id="L122" title="All 2 branches missed.">            for (int rounds : spec.rounds()) {</span>
+<span class="nc" id="L123">                GeneratedSeason season = generator.generate(rounds);</span>
+<span class="nc" id="L124">                Classification c = classify(season);</span>
+<span class="nc bnc" id="L125" title="All 2 branches missed.">                if (c.flags().containsAll(spec.required())</span>
+<span class="nc bnc" id="L126" title="All 2 branches missed.">                        &amp;&amp; spec.forbidden().stream().noneMatch(c.flags()::contains)) {</span>
+<span class="nc" id="L127">                    return new Selection(seed, rounds, season, c);</span>
+                }
+            }
+        }
+<span class="nc" id="L131">        return null;</span>
+    }
+
+    // ------------------------------------------------------------------ bağımsız sınıflandırıcı
+
+    /** Sınıflandırma sonucu: bayraklar ve okunabilir özet. */
+<span class="nc" id="L137">    record Classification(Set&lt;String&gt; flags, String summary) {</span>
+    }
+
+    // takım başına ham istatistik
+    private static final class Raw {
+        int points;
+        int goalsFor;
+        int goalsAgainst;
+        boolean forfeitLoss;
+    }
+
+    /**
+     * Kaba sınıflandırma:
+     * - Ham puan = 3G + B − silinen. Hükmen maçta hükmen sayılan taraf yenik, diğeri galip sayılır
+     *   ve gol FMT 23/4'e göre düzeltilir (galibe 3, galip 3'ten fazla attıysa kendi golü; yenilenin golü 0).
+     *   Bu kısa mantık, puanın doğru olması için hesaplayıcıdan bağımsız olarak burada yeniden yazıldı.
+     * - TIE_2 / TIE_3PLUS: aynı ham puanda tam 2 / en az 3 takım olan grup var. NO_TIE: hiç böyle grup yok.
+     * - LIKELY_UNRESOLVED: bir puan grubunun TÜM üyeleri genel averaj, atılan gol ve hükmen yenilgi durumunda
+     *   aynı ve grup içi maçlardan oluşan mini tabloda (puan, averaj, atılan gol) da aynı. Grup içi maç hiç
+     *   yoksa mini tablo herkes için 0'dır. Bu durumda FMT 9/2'deki hiçbir hesaplanabilir kriter grubu ayıramaz.
+     *   Kısmi çözülemezlik (grubun yalnızca bir alt kümesi) bilerek aranmaz; bayrak &quot;muhtemel&quot; olarak adlandırıldı.
+     */
+    static Classification classify(GeneratedSeason season) {
+<span class="nc" id="L160">        Map&lt;Team, Raw&gt; raw = new LinkedHashMap&lt;&gt;();</span>
+<span class="nc bnc" id="L161" title="All 2 branches missed.">        for (Team t : season.teams()) {</span>
+<span class="nc" id="L162">            raw.put(t, new Raw());</span>
+<span class="nc" id="L163">        }</span>
+<span class="nc" id="L164">        int forfeits = 0;</span>
+<span class="nc bnc" id="L165" title="All 2 branches missed.">        for (MatchResult m : season.matches()) {</span>
+<span class="nc" id="L166">            int[] g = adjustedGoals(m);</span>
+<span class="nc bnc" id="L167" title="All 2 branches missed.">            if (m.forfeit() != Forfeit.NONE) {</span>
+<span class="nc" id="L168">                forfeits++;</span>
+<span class="nc bnc" id="L169" title="All 2 branches missed.">                raw.get(m.forfeit() == Forfeit.HOME ? m.homeTeam() : m.awayTeam()).forfeitLoss = true;</span>
+            }
+<span class="nc" id="L171">            addResult(raw.get(m.homeTeam()), g[0], g[1]);</span>
+<span class="nc" id="L172">            addResult(raw.get(m.awayTeam()), g[1], g[0]);</span>
+<span class="nc" id="L173">        }</span>
+<span class="nc bnc" id="L174" title="All 2 branches missed.">        for (PointDeduction d : season.deductions()) {</span>
+<span class="nc" id="L175">            raw.get(d.team()).points -= d.points();</span>
+<span class="nc" id="L176">        }</span>
+
+        // ham puana göre gruplar (yüksekten düşüğe)
+<span class="nc" id="L179">        Map&lt;Integer, List&lt;Team&gt;&gt; groups = new TreeMap&lt;&gt;(Comparator.reverseOrder());</span>
+<span class="nc bnc" id="L180" title="All 2 branches missed.">        for (Map.Entry&lt;Team, Raw&gt; e : raw.entrySet()) {</span>
+<span class="nc" id="L181">            groups.computeIfAbsent(e.getValue().points, k -&gt; new ArrayList&lt;&gt;()).add(e.getKey());</span>
+<span class="nc" id="L182">        }</span>
+
+<span class="nc" id="L184">        int twoGroups = 0;</span>
+<span class="nc" id="L185">        int bigGroups = 0;</span>
+<span class="nc" id="L186">        int largest = 1;</span>
+<span class="nc" id="L187">        List&lt;String&gt; unresolved = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L188" title="All 2 branches missed.">        for (Map.Entry&lt;Integer, List&lt;Team&gt;&gt; e : groups.entrySet()) {</span>
+<span class="nc" id="L189">            List&lt;Team&gt; group = e.getValue();</span>
+<span class="nc bnc" id="L190" title="All 2 branches missed.">            if (group.size() &lt; 2) {</span>
+<span class="nc" id="L191">                continue;</span>
+            }
+<span class="nc" id="L193">            largest = Math.max(largest, group.size());</span>
+<span class="nc bnc" id="L194" title="All 2 branches missed.">            if (group.size() == 2) {</span>
+<span class="nc" id="L195">                twoGroups++;</span>
+            } else {
+<span class="nc" id="L197">                bigGroups++;</span>
+            }
+<span class="nc bnc" id="L199" title="All 2 branches missed.">            if (isLikelyUnresolved(group, raw, season.matches())) {</span>
+<span class="nc" id="L200">                unresolved.add(group.size() + &quot; teams on &quot; + e.getKey() + &quot; pts&quot;);</span>
+            }
+<span class="nc" id="L202">        }</span>
+
+<span class="nc" id="L204">        Set&lt;String&gt; flags = new LinkedHashSet&lt;&gt;();</span>
+<span class="nc bnc" id="L205" title="All 4 branches missed.">        if (twoGroups == 0 &amp;&amp; bigGroups == 0) {</span>
+<span class="nc" id="L206">            flags.add(NO_TIE);</span>
+        }
+<span class="nc bnc" id="L208" title="All 2 branches missed.">        if (twoGroups &gt; 0) {</span>
+<span class="nc" id="L209">            flags.add(TIE_2);</span>
+        }
+<span class="nc bnc" id="L211" title="All 2 branches missed.">        if (bigGroups &gt; 0) {</span>
+<span class="nc" id="L212">            flags.add(TIE_3PLUS);</span>
+        }
+<span class="nc bnc" id="L214" title="All 2 branches missed.">        if (forfeits &gt; 0) {</span>
+<span class="nc" id="L215">            flags.add(FORFEIT);</span>
+        }
+<span class="nc bnc" id="L217" title="All 2 branches missed.">        if (!season.deductions().isEmpty()) {</span>
+<span class="nc" id="L218">            flags.add(DEDUCTION);</span>
+        }
+<span class="nc bnc" id="L220" title="All 2 branches missed.">        if (!unresolved.isEmpty()) {</span>
+<span class="nc" id="L221">            flags.add(LIKELY_UNRESOLVED);</span>
+        }
+
+<span class="nc" id="L224">        StringBuilder s = new StringBuilder();</span>
+<span class="nc" id="L225">        s.append(season.matches().size()).append(&quot; matches, &quot;)</span>
+<span class="nc" id="L226">                .append(twoGroups).append(&quot; two-team tie(s), &quot;)</span>
+<span class="nc" id="L227">                .append(bigGroups).append(&quot; 3+-team tie(s)&quot;);</span>
+<span class="nc bnc" id="L228" title="All 2 branches missed.">        if (bigGroups &gt; 0) {</span>
+<span class="nc" id="L229">            s.append(&quot; (largest &quot;).append(largest).append(&quot;)&quot;);</span>
+        }
+<span class="nc" id="L231">        s.append(&quot;, &quot;).append(forfeits).append(&quot; forfeit(s), &quot;)</span>
+<span class="nc" id="L232">                .append(season.deductions().size()).append(&quot; deduction(s)&quot;);</span>
+<span class="nc bnc" id="L233" title="All 2 branches missed.">        if (!unresolved.isEmpty()) {</span>
+<span class="nc" id="L234">            s.append(&quot;, likely unresolved: &quot;).append(String.join(&quot; / &quot;, unresolved));</span>
+        }
+<span class="nc" id="L236">        return new Classification(flags, s.toString());</span>
+    }
+
+    private static boolean isLikelyUnresolved(List&lt;Team&gt; group, Map&lt;Team, Raw&gt; raw, List&lt;MatchResult&gt; matches) {
+<span class="nc" id="L240">        Raw first = raw.get(group.get(0));</span>
+<span class="nc bnc" id="L241" title="All 2 branches missed.">        for (Team t : group) {</span>
+<span class="nc" id="L242">            Raw r = raw.get(t);</span>
+<span class="nc bnc" id="L243" title="All 6 branches missed.">            if (r.goalsFor - r.goalsAgainst != first.goalsFor - first.goalsAgainst</span>
+                    || r.goalsFor != first.goalsFor || r.forfeitLoss != first.forfeitLoss) {
+<span class="nc" id="L245">                return false;</span>
+            }
+<span class="nc" id="L247">        }</span>
+        // grup içi mini tablo
+<span class="nc" id="L249">        Set&lt;Team&gt; members = new HashSet&lt;&gt;(group);</span>
+<span class="nc" id="L250">        Map&lt;Team, Raw&gt; mini = new LinkedHashMap&lt;&gt;();</span>
+<span class="nc bnc" id="L251" title="All 2 branches missed.">        for (Team t : group) {</span>
+<span class="nc" id="L252">            mini.put(t, new Raw());</span>
+<span class="nc" id="L253">        }</span>
+<span class="nc bnc" id="L254" title="All 2 branches missed.">        for (MatchResult m : matches) {</span>
+<span class="nc bnc" id="L255" title="All 4 branches missed.">            if (members.contains(m.homeTeam()) &amp;&amp; members.contains(m.awayTeam())) {</span>
+<span class="nc" id="L256">                int[] g = adjustedGoals(m);</span>
+<span class="nc" id="L257">                addResult(mini.get(m.homeTeam()), g[0], g[1]);</span>
+<span class="nc" id="L258">                addResult(mini.get(m.awayTeam()), g[1], g[0]);</span>
+            }
+<span class="nc" id="L260">        }</span>
+<span class="nc" id="L261">        Raw m0 = mini.get(group.get(0));</span>
+<span class="nc bnc" id="L262" title="All 2 branches missed.">        for (Raw r : mini.values()) {</span>
+<span class="nc bnc" id="L263" title="All 6 branches missed.">            if (r.points != m0.points || r.goalsFor != m0.goalsFor || r.goalsAgainst != m0.goalsAgainst) {</span>
+<span class="nc" id="L264">                return false;</span>
+            }
+<span class="nc" id="L266">        }</span>
+<span class="nc" id="L267">        return true;</span>
+    }
+
+    // FMT 23/4: hükmen galibe 3 gol (kendi golü 3'ten fazlaysa o geçerli), yenilenin golleri geçersiz
+    private static int[] adjustedGoals(MatchResult m) {
+<span class="nc bnc" id="L272" title="All 3 branches missed.">        return switch (m.forfeit()) {</span>
+<span class="nc" id="L273">            case NONE -&gt; new int[] {m.homeGoals(), m.awayGoals()};</span>
+<span class="nc" id="L274">            case HOME -&gt; new int[] {0, Math.max(3, m.awayGoals())};</span>
+<span class="nc" id="L275">            case AWAY -&gt; new int[] {Math.max(3, m.homeGoals()), 0};</span>
+        };
+    }
+
+    private static void addResult(Raw r, int scored, int conceded) {
+<span class="nc" id="L280">        r.goalsFor += scored;</span>
+<span class="nc" id="L281">        r.goalsAgainst += conceded;</span>
+<span class="nc bnc" id="L282" title="All 2 branches missed.">        if (scored &gt; conceded) {</span>
+<span class="nc" id="L283">            r.points += 3;</span>
+<span class="nc bnc" id="L284" title="All 2 branches missed.">        } else if (scored == conceded) {</span>
+<span class="nc" id="L285">            r.points += 1;</span>
+        }
+<span class="nc" id="L287">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>

@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="tr"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ScenarioLibrary.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">tff-standings-engine</a> &gt; <a href="index.source.html" class="el_package">edu.svv.standings.generator</a> &gt; <span class="el_source">ScenarioLibrary.java</span></div><h1>ScenarioLibrary.java</h1><pre class="source lang-java linenums">package edu.svv.standings.generator;
+
+import edu.svv.standings.io.CsvLoader;
+import edu.svv.standings.model.MatchResult;
+import edu.svv.standings.model.PointDeduction;
+import edu.svv.standings.model.Team;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+
+/**
+ * Repoya önceden konmuş senaryo kütüphanesi (src/main/resources/scenarios/).
+ * Katalog: scenarios/catalogue.csv (başlıklı: id;seed;rounds;flags;description, flags virgülle ayrılır).
+ * Her senaryo klasöründe projenin CSV biçiminde teams.csv, matches.csv, deductions.csv bulunur;
+ * dosyalar CsvLoader'ın parse yöntemleriyle okunur, yani CLI ile aynı doğrulamadan geçer.
+ */
+public final class ScenarioLibrary {
+
+    public static final String BASE = &quot;/scenarios/&quot;;
+    public static final String CATALOGUE = BASE + &quot;catalogue.csv&quot;;
+
+    /** Katalogdaki bir satır. */
+<span class="fc" id="L36">    public record Entry(String id, long seed, int rounds, Set&lt;String&gt; flags, String description) {</span>
+    }
+
+    private final Map&lt;String, Entry&gt; entries;
+
+    /** Kataloğu sınıf yolundan okur. */
+<span class="fc" id="L42">    public ScenarioLibrary() {</span>
+<span class="fc" id="L43">        this.entries = parseCatalogue(readLines(CATALOGUE));</span>
+<span class="fc" id="L44">    }</span>
+
+    /** Senaryo kimlikleri, katalog sırasıyla (S01, S02, ...). */
+    public List&lt;String&gt; ids() {
+<span class="fc" id="L48">        return List.copyOf(entries.keySet());</span>
+    }
+
+    public List&lt;Entry&gt; entries() {
+<span class="fc" id="L52">        return List.copyOf(entries.values());</span>
+    }
+
+    public Entry entry(String id) {
+<span class="fc" id="L56">        Entry e = entries.get(id);</span>
+<span class="fc bfc" id="L57" title="All 2 branches covered.">        if (e == null) {</span>
+<span class="fc" id="L58">            throw new IllegalArgumentException(&quot;Unknown scenario: &quot; + id + &quot; (known: &quot; + ids() + &quot;)&quot;);</span>
+        }
+<span class="fc" id="L60">        return e;</span>
+    }
+
+    /** Senaryoyu sınıf yolundan okur; açıklama katalogdan gelir. */
+    public GeneratedSeason load(String id) {
+<span class="fc" id="L65">        Entry e = entry(id);</span>
+<span class="fc" id="L66">        String dir = BASE + id + &quot;/&quot;;</span>
+<span class="fc" id="L67">        CsvLoader loader = new CsvLoader();</span>
+        List&lt;Team&gt; teams;
+        List&lt;MatchResult&gt; matches;
+        List&lt;PointDeduction&gt; deductions;
+<span class="fc" id="L71">        try (Reader r = open(dir + &quot;teams.csv&quot;)) {</span>
+<span class="fc" id="L72">            teams = loader.parseTeams(r, id + &quot;/teams.csv&quot;);</span>
+<span class="nc" id="L73">        } catch (IOException ex) {</span>
+<span class="nc" id="L74">            throw new UncheckedIOException(ex);</span>
+<span class="fc" id="L75">        }</span>
+<span class="fc" id="L76">        try (Reader r = open(dir + &quot;matches.csv&quot;)) {</span>
+<span class="fc" id="L77">            matches = loader.parseMatches(r, teams, id + &quot;/matches.csv&quot;);</span>
+<span class="nc" id="L78">        } catch (IOException ex) {</span>
+<span class="nc" id="L79">            throw new UncheckedIOException(ex);</span>
+<span class="fc" id="L80">        }</span>
+<span class="fc" id="L81">        try (Reader r = open(dir + &quot;deductions.csv&quot;)) {</span>
+<span class="fc" id="L82">            deductions = loader.parseDeductions(r, teams, id + &quot;/deductions.csv&quot;);</span>
+<span class="nc" id="L83">        } catch (IOException ex) {</span>
+<span class="nc" id="L84">            throw new UncheckedIOException(ex);</span>
+<span class="fc" id="L85">        }</span>
+<span class="fc" id="L86">        return new GeneratedSeason(teams, matches, deductions, e.description());</span>
+    }
+
+    /** Seed ile tekrarlanabilir rastgele senaryo seçimi. */
+    public String pickRandomId(long seed) {
+<span class="fc" id="L91">        List&lt;String&gt; ids = ids();</span>
+<span class="fc" id="L92">        return ids.get(new Random(seed).nextInt(ids.size()));</span>
+    }
+
+    // --- yardımcılar ---
+
+    private static Map&lt;String, Entry&gt; parseCatalogue(List&lt;String&gt; lines) {
+<span class="fc" id="L98">        Map&lt;String, Entry&gt; result = new LinkedHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L99" title="All 2 branches covered.">        for (int i = 1; i &lt; lines.size(); i++) {</span>
+            // ilk satır başlık
+<span class="fc" id="L101">            String line = lines.get(i).strip();</span>
+<span class="pc bpc" id="L102" title="1 of 2 branches missed.">            if (line.isEmpty()) {</span>
+<span class="nc" id="L103">                continue;</span>
+            }
+<span class="fc" id="L105">            String[] f = line.split(&quot;;&quot;, -1);</span>
+<span class="pc bpc" id="L106" title="1 of 2 branches missed.">            if (f.length != 5) {</span>
+<span class="nc" id="L107">                throw new IllegalStateException(&quot;catalogue.csv, line &quot; + (i + 1) + &quot;: expected 5 fields&quot;);</span>
+            }
+<span class="pc bpc" id="L109" title="1 of 2 branches missed.">            Set&lt;String&gt; flags = f[3].isBlank()</span>
+<span class="nc" id="L110">                    ? Set.of()</span>
+<span class="fc" id="L111">                    : new LinkedHashSet&lt;&gt;(Arrays.asList(f[3].strip().split(&quot;,&quot;)));</span>
+<span class="fc" id="L112">            Entry e = new Entry(f[0].strip(), Long.parseLong(f[1].strip()), Integer.parseInt(f[2].strip()),</span>
+<span class="fc" id="L113">                    Set.copyOf(flags), f[4].strip());</span>
+<span class="fc" id="L114">            result.put(e.id(), e);</span>
+        }
+<span class="pc bpc" id="L116" title="1 of 2 branches missed.">        if (result.isEmpty()) {</span>
+<span class="nc" id="L117">            throw new IllegalStateException(&quot;Scenario catalogue is empty&quot;);</span>
+        }
+<span class="fc" id="L119">        return result;</span>
+    }
+
+    private static Reader open(String resource) {
+<span class="fc" id="L123">        InputStream in = ScenarioLibrary.class.getResourceAsStream(resource);</span>
+<span class="pc bpc" id="L124" title="1 of 2 branches missed.">        if (in == null) {</span>
+<span class="nc" id="L125">            throw new IllegalStateException(&quot;Resource not found on classpath: &quot; + resource);</span>
+        }
+<span class="fc" id="L127">        return new InputStreamReader(in, StandardCharsets.UTF_8);</span>
+    }
+
+    private static List&lt;String&gt; readLines(String resource) {
+<span class="fc" id="L131">        try (BufferedReader reader = new BufferedReader(open(resource))) {</span>
+<span class="fc" id="L132">            return new ArrayList&lt;&gt;(reader.lines().toList());</span>
+<span class="nc" id="L133">        } catch (IOException e) {</span>
+<span class="nc" id="L134">            throw new UncheckedIOException(e);</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.13.202504020838</span></div></body></html>
