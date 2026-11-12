@@ -84,8 +84,9 @@ public class StandingsCalculator {
     }
 
     private void validateMatches(List<MatchResult> matches, Map<Team, StandingRow> rows) {
-        Set<String> fixtures = new HashSet<>();
-        Map<String, Integer> pairCounts = new HashMap<>();
+        // DEF-003: anahtarlar isim birleştirmek yerine Team nesnelerinden kurulur; "|" içeren adlar çakışmaz
+        Set<List<Team>> fixtures = new HashSet<>();
+        Map<Set<Team>, Integer> pairCounts = new HashMap<>();
 
         for (MatchResult match : matches) {
             if (match == null) {
@@ -98,27 +99,21 @@ public class StandingsCalculator {
             }
 
             // V-06: aynı ev sahibi/deplasman eşleşmesi bir kez oynanır
-            String fixture = match.homeTeam().name() + "|" + match.awayTeam().name();
+            List<Team> fixture = List.of(match.homeTeam(), match.awayTeam());
             if (!fixtures.add(fixture)) {
-                throw new IllegalArgumentException("Duplicate fixture: " + fixture);
+                throw new IllegalArgumentException("Duplicate fixture: "
+                        + match.homeTeam().name() + " - " + match.awayTeam().name());
             }
 
-            // V-06: iki takım arasında en fazla iki maç olabilir
-            String pair = pairKey(match.homeTeam(), match.awayTeam());
+            // V-06: iki takım arasında en fazla iki maç olabilir (Set: eşleşme yönünden bağımsız anahtar)
+            Set<Team> pair = Set.of(match.homeTeam(), match.awayTeam());
             int count = pairCounts.getOrDefault(pair, 0) + 1;
             if (count > 2) {
-                throw new IllegalArgumentException("More than two matches between " + pair);
+                throw new IllegalArgumentException("More than two matches between "
+                        + match.homeTeam().name() + " and " + match.awayTeam().name());
             }
             pairCounts.put(pair, count);
         }
-    }
-
-    private String pairKey(Team a, Team b) {
-        // eşleşme yönünden bağımsız anahtar: isimler alfabetik sırayla
-        if (a.name().compareTo(b.name()) < 0) {
-            return a.name() + "|" + b.name();
-        }
-        return b.name() + "|" + a.name();
     }
 
     private void applyMatch(MatchResult match, Map<Team, StandingRow> rows) {
