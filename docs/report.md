@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| **Student** | [Student Name] |
-| **Student No** | [Student No] |
-| **Course** | Software Verification and Validation (SVV) [course code] — individual JUnit assignment |
-| **Date** | [Date] |
+| **Student** | Ozan Serhan Denizhan |
+| **Student No** | 220911758 |
+| **Course** | SWE411 - Software Verification and Validation — individual JUnit assignment |
+| **Date** | 13.11.2026 |
 | **Repository** | https://github.com/serhandenizhan/tff-standings-engine |
 
 > Draft status: full report draft written from the repository files on 2026-11-12. Every number below comes from a file in the repository (see the Appendix). Places marked `[STUDENT ...]` must be completed or reviewed by the student.

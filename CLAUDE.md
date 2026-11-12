@@ -68,9 +68,10 @@ Zincir: **2026–27 Süper Lig Müsabakaları Statüsü** (Md. 3: 18 takım, çi
 4. ✅ Defect log: DEF-001 Türkçe alfabe (`37b9388`), DEF-002 boş hükmen alanı (`e03aea7`); regresyon 125/125 (`docs/results/run-02-after-fixes`). Üreteç testleri sonrası yeni defect çıkarsa DEF-003+
 5. ✅ Coverage: `docs/coverage-analysis.md`, `docs/results/coverage/`, `docs/results/run-03-full-suite/`. 655 çalıştırma yeşil. Toplam branch %71.0 (araçlar hariç %97.5); kalan boşluklar ulaşılamaz/savunmacı kod veya araç kodu. Yeni defect yok
 6. ✅ Rapor taslağı `docs/report.md` (~10k kelime, İngilizce) + test planı Actual sütunu dolduruldu + README dokümantasyon tablosu.
+7. ✅ Türkçe çeviri `docs/report.tr.md` (sadece okuma için; teslim İngilizce). Kontrol artifact'i: https://claude.ai/artifact/LaSP9N711DAh45vbVppmzV (ödev maddeleri, tahmini puan 86/100, savunma kartları, S01–S12 tabloları ve maçları)
 
 ## Öğrenciye kalanlar (teslim öncesi)
-- `docs/report.md`: `[Student Name]`, `[Student No]`, `[course code]`, `[Date]`; §2.6 "Java öğrenme zorlukları" (`[STUDENT TO WRITE]`); §5.1 Python oracle cümlesi (onayla/sil); §9 AI kullanım beyanını gözden geçir/uyarla.
+- `docs/report.md`: öğrenci bilgileri dolduruldu (Ozan Serhan Denizhan, 220911758, SWE411, 13.11.2026). Kalan: §2.6 "Java öğrenme zorlukları" (`[STUDENT TO WRITE]`); §5.1 Python oracle cümlesi (onayla/sil); §9 AI kullanım beyanını gözden geçir/uyarla.
 - Raporu gerekirse kısalt (hedef 5–7k kelime idi), Word/PDF'e çevir.
 - Test planı Q1–Q13 çözümlerini ve varsayımları (A-01..A-04) gözden geçir; sözlü savunmaya hazırlan.
 - Teslim tarihini (muhtemelen 24 Kasım) hocadan teyit et.

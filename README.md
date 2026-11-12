@@ -85,5 +85,6 @@ Kasımpaşa;Çaykur Rizespor;2;2;AWAY
 | `docs/generator.md` | Season generator design and realism check |
 | `docs/data-sources.md` | Real data sources (2016–17..2025–26) |
 | `docs/report.md` | Report draft |
+| `docs/report.tr.md` | Turkish translation of the report (reading copy) |
 | `docs/results/` | Stored test runs and coverage report |
 | `docs/ai-usage-log.md` | AI tool usage log |
