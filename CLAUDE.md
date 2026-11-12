@@ -53,13 +53,13 @@ Zincir: **2026–27 Süper Lig Müsabakaları Statüsü** (Md. 3: 18 takım, çi
 - [x] Java + Maven kuruldu (Homebrew): openjdk@21 (keg-only), Maven 3.10.0. `~/.zshrc` içinde JAVA_HOME Java 21'e sabitlendi (yedek: `~/.zshrc.bak-tff`); `java` ve `mvn` Java 21 kullanıyor. Sistem locale'i tr_TR.
 - [x] Gereksinim belirtimi: `docs/requirements.md` v1.0 onaylandı (D-01 birebir isim, D-02 alfabetik + işaret)
 - [x] Maven iskeleti: pom.xml (Java 21, JUnit 5.11.4, Surefire 3.5.2, JaCoCo 0.8.13), paket `edu.svv.standings`. `mvn verify` → testler + `target/site/jacoco/index.html`. Geçici smoke test ile doğrulandı, sonra silindi.
-- [ ] İlk sürüm kod (v1, bilerek cilalanmaz, bilerek hata da eklenmez):
+- [x] İlk sürüm kod (v1, bilerek cilalanmaz, bilerek hata da eklenmez):
   - [x] Model: `model/` paketi — `Team`, `Forfeit`, `MatchResult`, `PointDeduction` (record; nesne düzeyi doğrulama V-01/02/04/05/07)
   - [x] İstatistik + puan hesabı (FR-04..08), çapraz doğrulama (V-01/02/03/06/07): `StandingRow`, `StandingsCalculator` 
   - [x] Eşitlik bozma (FR-09..12): `TieBreaker` — tek mini tablo + genel kriterler, komşu eşitse unresolved, görüntü için alfabetik. FR-13 çıktısı `StandingRow` ile karşılanıyor.
-  - [ ] CSV okuyucu + komut satırı (FR-14, FR-15, V-08) — requirements v1.1 onaylandı
+  - [x] CSV okuyucu + komut satırı (FR-14, FR-15, V-08)
 - GitHub: https://github.com/serhandenizhan/tff-standings-engine (public, remote `origin`). Push yalnızca onayla.
-- [ ] Test planı → JUnit → defect log → fix → regresyon → coverage → rapor
+- [x] Test planı → JUnit → defect log → fix → regresyon → coverage → rapor taslağı
 
 ## Faz planı (otonom)
 1. ✅ CSV okuyucu + CLI + örnek veri + README (e2ef8f4). Gerçek veri (5618900). Üreteç: güç modeli (son 10 sezon, Poisson, H=1.10), çift devreli fikstür, 12 senaryoluk kütüphane `src/main/resources/scenarios/` (S01–S12), CLI `--scenario <id|random> [seed]`, gerçekçilik kontrolü `docs/generator.md`
@@ -67,7 +67,13 @@ Zincir: **2026–27 Süper Lig Müsabakaları Statüsü** (Md. 3: 18 takım, çi
 3. ✅ JUnit testleri: 125 çalıştırma, 3 kırmızı (TC-078, TC-079 Türkçe alfabe; TC-087 boş 5. alan) → kırmızı commit. Üreteç + özellik/metamorfik testleri eklendi (TC-100..134, toplam 640 çalıştırma, hepsi geçti; yeni defect yok)
 4. ✅ Defect log: DEF-001 Türkçe alfabe (`37b9388`), DEF-002 boş hükmen alanı (`e03aea7`); regresyon 125/125 (`docs/results/run-02-after-fixes`). Üreteç testleri sonrası yeni defect çıkarsa DEF-003+
 5. ✅ Coverage: `docs/coverage-analysis.md`, `docs/results/coverage/`, `docs/results/run-03-full-suite/`. 655 çalıştırma yeşil. Toplam branch %71.0 (araçlar hariç %97.5); kalan boşluklar ulaşılamaz/savunmacı kod veya araç kodu. Yeni defect yok
-6. Rapor taslağı `docs/report.md` + son kontrol
+6. ✅ Rapor taslağı `docs/report.md` (~10k kelime, İngilizce) + test planı Actual sütunu dolduruldu + README dokümantasyon tablosu.
+
+## Öğrenciye kalanlar (teslim öncesi)
+- `docs/report.md`: `[Student Name]`, `[Student No]`, `[course code]`, `[Date]`; §2.6 "Java öğrenme zorlukları" (`[STUDENT TO WRITE]`); §5.1 Python oracle cümlesi (onayla/sil); §9 AI kullanım beyanını gözden geçir/uyarla.
+- Raporu gerekirse kısalt (hedef 5–7k kelime idi), Word/PDF'e çevir.
+- Test planı Q1–Q13 çözümlerini ve varsayımları (A-01..A-04) gözden geçir; sözlü savunmaya hazırlan.
+- Teslim tarihini (muhtemelen 24 Kasım) hocadan teyit et.
 
 ## Tasarım notları
 - Nesne düzeyi doğrulama record constructor'larında; takımlar arası doğrulama (bilinmeyen takım, tekrarlanan maç) hesaplayıcıda.
