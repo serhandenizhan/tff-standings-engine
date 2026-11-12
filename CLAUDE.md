@@ -17,7 +17,8 @@ Bireysel SVV ödevi: TFF puan eşitliği kurallarına göre lig tablosu üreten 
 - Teknikler: eşdeğerlik sınıfları, sınır değer, karar tablosu, negatif, regresyon + her seçimin gerekçesi.
 - Test case'ler girdi / beklenen / gerçekleşen ile; defect analizi; coverage raporu.
 - Not: Gereksinim 10, Kod 15, Test planı 20, JUnit 25, Coverage+defect 10, Araştırma 15, Rapor 5 (test tarafı %55).
-- Teslim: büyük ihtimalle **24 Kasım 2026** (PDF'te 17 çizilip 24 yazılmış; teyit edilmedi).
+- Teslim: **24 Kasım 2026, basılı (hard copy)**, sonrası kesinlikle kabul edilmez (hoca maili, 2026-11-13).
+- Hoca maili: öneriler kabul; rapor **en fazla 7 sayfa**; **sadece öğrencinin kendi cümleleri ve kodu**; raporda yalnızca ilgili kod ve test bölümleri.
 
 ## Kararlar
 | Tarih | Karar | Gerekçe |
@@ -31,6 +32,7 @@ Bireysel SVV ödevi: TFF puan eşitliği kurallarına göre lig tablosu üreten 
 | 2026-11-12 | Hata bulan testler düzeltmeden önce kırmızı commit'lenir | Süreç commit geçmişinde görünsün |
 | 2026-11-12 | Senaryo üreteci: garantili eşitlik YOK. Gerçekçi rastgele sezonlar (18 takım, gerçekçi gol dağılımı, ~%1 hükmen, nadir puan silme, tam + sezon ortası); bunlardan 10–12'si önceden seçilip CSV olarak repoya konur (çeşitlilik: eşitlik yok / 2'li / 3'lü / hükmen+silme / hepsi / en az bir tamamen çözülemez). Program ve testler kütüphaneden seed ile rastgele birini seçer | Kullanıcı kararı |
 | 2026-11-12 | Takım gücü: güncel 2026–27 Süper Lig kulüpleri; son 10 sezonun (2016–17..2025–26) gerçek puan/gol/sıra verisi; düşüp çıkanlar için sadece Süper Lig sezonlarının ortalaması; pencerede hiç Süper Lig sezonu olmayanlar için yeni çıkan takımların ilk sezon ortalaması | Kullanıcı kararı: şampiyon/küme düşen gerçekçi olsun |
+| 2026-11-13 | Rapor ≤7 sayfa. Önce kısa Türkçe taslak (`docs/report-short.tr.md`); İngilizceyi öğrenci kendi cümleleriyle yazar, Claude yalnızca yardım eder (düzeltme, öneri, kontrol) | Hoca: 7 sayfa sınırı + kendi cümleleri |
 | 2026-11-12 | Test planı belirsizlikleri (Q1–Q13) orkestratör tarafından çözüldü; Q3 (null forfeit) FR-14 ile tutarlı olarak NONE kabul edildi | Kullanıcı yokken; test-plan.md ekinde kayıtlı |
 
 ## Kural kaynağı
@@ -68,13 +70,16 @@ Zincir: **2026–27 Süper Lig Müsabakaları Statüsü** (Md. 3: 18 takım, çi
 4. ✅ Defect log: DEF-001 Türkçe alfabe (`37b9388`), DEF-002 boş hükmen alanı (`e03aea7`); regresyon 125/125 (`docs/results/run-02-after-fixes`). Üreteç testleri sonrası yeni defect çıkarsa DEF-003+
 5. ✅ Coverage: `docs/coverage-analysis.md`, `docs/results/coverage/`, `docs/results/run-03-full-suite/`. 655 çalıştırma yeşil. Toplam branch %71.0 (araçlar hariç %97.5); kalan boşluklar ulaşılamaz/savunmacı kod veya araç kodu. Yeni defect yok
 6. ✅ Rapor taslağı `docs/report.md` (~10k kelime, İngilizce) + test planı Actual sütunu dolduruldu + README dokümantasyon tablosu.
+8. ✅ Kısa Türkçe rapor taslağı `docs/report-short.tr.md` (~1.350 kelime, 6 tablo, 3 kod bloğu ≈ 5 sayfa; İngilizcesi ≈ 5–6 sayfa olur). İngilizceyi öğrenci yazacak.
 7. ✅ Türkçe çeviri `docs/report.tr.md` (sadece okuma için; teslim İngilizce). Kontrol artifact'i: https://claude.ai/artifact/LaSP9N711DAh45vbVppmzV (ödev maddeleri, tahmini puan 86/100, savunma kartları, S01–S12 tabloları ve maçları)
 
 ## Öğrenciye kalanlar (teslim öncesi)
 - `docs/report.md`: öğrenci bilgileri dolduruldu (Ozan Serhan Denizhan, 220911758, SWE411, 13.11.2026). Kalan: §2.6 "Java öğrenme zorlukları" (`[STUDENT TO WRITE]`); §5.1 Python oracle cümlesi (onayla/sil); §9 AI kullanım beyanını gözden geçir/uyarla.
 - Raporu gerekirse kısalt (hedef 5–7k kelime idi), Word/PDF'e çevir.
 - Test planı Q1–Q13 çözümlerini ve varsayımları (A-01..A-04) gözden geçir; sözlü savunmaya hazırlan.
-- Teslim tarihini (muhtemelen 24 Kasım) hocadan teyit et.
+- ~~Teslim tarihini teyit et~~ → 24 Kasım, basılı, teyitli.
+- İngilizce raporu kendi cümlelerinle yaz (`docs/report-short.tr.md` rehber); uzun `docs/report.md` sadece arşiv/kaynak.
+- "Kendi kodu" şartı: kodun büyük kısmı AI ile yazıldı; hocaya AI kullanımını açıkça beyan et, gerekirse ne kadarına izin verdiğini sor; kodu satır satır anlatabilecek hale gel.
 
 ## Tasarım notları
 - Nesne düzeyi doğrulama record constructor'larında; takımlar arası doğrulama (bilinmeyen takım, tekrarlanan maç) hesaplayıcıda.
