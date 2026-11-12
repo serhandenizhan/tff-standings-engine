@@ -27,8 +27,13 @@ public class StandingRow {
     /** Bir maçın sonucunu satıra işler (goller hükmen düzeltmesi yapılmış olmalı). */
     void addMatch(int scored, int conceded, boolean lostByForfeit) {
         played++;
-        goalsFor += scored;
-        goalsAgainst += conceded;
+        // DEF-004: toplam int aralığını aşarsa sessizce negatife dönmek yerine girdi reddedilir (V-09)
+        try {
+            goalsFor = Math.addExact(goalsFor, scored);
+            goalsAgainst = Math.addExact(goalsAgainst, conceded);
+        } catch (ArithmeticException e) {
+            throw new IllegalArgumentException("Goal total out of range for team " + team.name(), e);
+        }
         if (scored > conceded) {
             won++;
         } else if (scored == conceded) {
@@ -42,7 +47,12 @@ public class StandingRow {
     }
 
     void addDeduction(int points) {
-        deductedPoints += points;
+        // DEF-004: biriken silme int aralığını aşarsa puan pozitife dönüyordu; artık reddedilir (V-09)
+        try {
+            deductedPoints = Math.addExact(deductedPoints, points);
+        } catch (ArithmeticException e) {
+            throw new IllegalArgumentException("Deducted points out of range for team " + team.name(), e);
+        }
     }
 
     void setPosition(int position) {

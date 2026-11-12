@@ -63,6 +63,8 @@ class ReviewDefectsTest {
                 new MatchResult(p, q, Integer.MAX_VALUE, 0), new MatchResult(q, p, 0, 1));
         IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
                 () -> calculator.calculate(List.of(p, q), matches, List.of()));
-        assertTrue(e.getMessage().contains("P"), "mesaj takımı adlandırmalı: " + e.getMessage());
+        // P'nin attığı her gol Q'nun yediği goldür: iki takımın toplamı da taşar, hangisi önce işlenirse o adlandırılır
+        assertTrue(e.getMessage().contains("P") || e.getMessage().contains("Q"),
+                "mesaj taşan takımı adlandırmalı: " + e.getMessage());
     }
 }
