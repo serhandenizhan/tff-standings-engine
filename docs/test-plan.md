@@ -1,6 +1,6 @@
 # Test Plan — TFF Standings Engine
 
-> Version 1.0 — 2026-11-12. Basis: `docs/requirements.md` v1.1 (FR-01..FR-15, V-01..V-08, A-01..A-04, D-01..D-03) and the TFF rule sources quoted in `CLAUDE.md` (FMT 9/1, 9/2-a, 9/2-b, 23/4, 24/1-a, FDT 33).
+> Version 1.1 — 2026-11-12 (section 6 rewritten for the data-driven generator and scenario library; TC-100..TC-134). Basis: `docs/requirements.md` v1.1 (FR-01..FR-15, V-01..V-08, A-01..A-04, D-01..D-03) and the TFF rule sources quoted in `CLAUDE.md` (FMT 9/1, 9/2-a, 9/2-b, 23/4, 24/1-a, FDT 33).
 > All expected results in this plan were derived **by hand from the requirements and the TFF rules**, not from the implementation (black-box). The source code was consulted only for public class / method names.
 
 **Notation used in all test data**
@@ -22,7 +22,7 @@
 | Component | `StandingsCalculator.calculate(teams, matches, deductions)` → `List<StandingRow>` (stats, points, forfeit, deductions, cross-object validation, full FMT 9/2 tie-breaking) | Core business rules FR-04..FR-13, V-01, V-03, V-06, V-07 |
 | Component | `io.CsvLoader` (+ `io.InputFormatException`) | FR-14, V-08 |
 | CLI / system | `cli.TableFormatter`, `cli.Main` (end-to-end: CSV files → stdout) | FR-14, FR-15, V-08, wrong arguments |
-| Property / metamorphic | `generator.SeasonGenerator` (seeded) + calculator | Invariants over many generated seasons; tie scenarios TWO_TEAM_TIE / THREE_TEAM_TIE / FULLY_UNRESOLVED |
+| Generator / property / metamorphic | `generator.SeasonGenerator`, `StrengthModel`, `ScenarioLibrary` (seeded) + calculator | Generator correctness; invariants and metamorphic relations over the 12 library seasons and 50 random seasons; catalogue flags vs calculator |
 
 ### 1.2 Approach
 
@@ -267,26 +267,76 @@ In all F1–F5: forfeiter gets a loss, 0 points and `hasForfeitLoss() = true`; a
 
 ---
 
-## 6. Random, property-based and metamorphic tests
+## 6. Generator, scenario library, property-based and metamorphic tests
 
-Class `generator/PropertyBasedStandingsTest`, driven by `generator.SeasonGenerator` with **fixed seeds** (e.g. seeds 1..100 via `@MethodSource`; failing seed printed in the `@DisplayName`), so every run is reproducible and any failure becomes a hand-checked regression case.
+**Changed generator (student decision, 2026-11-12).** There are no constructed tie scenarios any more. `generator.SeasonGenerator` produces *realistic* random 18-club seasons (strengths from the last 10 Süper Lig seasons, Poisson goals, circle-method double round robin, 1 % forfeits, 2 % deductions; `docs/generator.md`). A library of 12 pre-generated seasons S01..S12 (`src/main/resources/scenarios/`, catalogue with flags NO_TIE, TIE_2, TIE_3PLUS, FORFEIT, DEDUCTION, LIKELY_UNRESOLVED) is used by the CLI (`--scenario <id|random> [seed]`) and by the tests. Whatever ties occur come from the random results; the tie-break *logic* is still verified exactly by the hand-made cases of §4 / §7.6 / §7.7.
 
-**Why it complements the hand-made cases.** Hand cases are small (3–5 teams) and only check what the designer thought of. Generated full seasons (18 teams, double round-robin, random forfeits and deductions) exercise combinations nobody writes by hand (several tie groups at once, ties at negative points, forfeits inside mini-tables). They do not need an exact expected table: the oracle is a set of **invariants** that must hold for every correct table, and **metamorphic relations** (change the input in a way whose effect on the output is known). This addresses the oracle problem for large inputs.
+**Why this section is still needed.** Hand cases are small (3–5 teams) and only check what the designer thought of. Full seasons (18 teams, 34 rounds, forfeits, deductions) exercise combinations nobody writes by hand. No exact expected table exists for them, so the oracle is (a) **invariants** that every correct table must satisfy, (b) a small **test-side oracle** (points/goals recomputed from the raw match list incl. FMT 23/4) and (c) **metamorphic relations** (change the input in a way whose effect on the output is known). The generator is itself first-version code and may contain defects, so it gets its own tests (group A), including the statistical ones. Test data sources: all 12 library scenarios + 50 seeded random seasons (seeds 1..50; every third one a mid-season table of `(seed·7) mod 34 + 1` rounds, the rest full seasons) for groups C/D; the failing label (`library S04` / `random seed 17, rounds 34`) is the invocation name, so any failure is reproducible.
 
-| TC | Property / relation | Basis |
+### Group A — generator correctness (`SeasonGeneratorTest`, `StrengthModelTest`)
+
+| TC | Property | Basis |
 |---|---|---|
-| TC-100 | Conservation: Σ won = Σ lost; Σ drawn is even; Σ GF = Σ GA | every match has one W + one L or two D; goals counted once each side |
-| TC-101 | Per row: played = W + D + L; GD = GF − GA; points = 3W + D − deductedPoints | FR-04, FR-05, FR-07, A-01 |
+| TC-111 | Same seed (and rounds) → identical season (teams, matches, deductions, description); the generated season passes calculator validation (no V-xx exception, 18 rows). Also: `null` strength model rejected; team names equal the strength-model clubs | generator contract (seed ⇒ same season), FR-03 |
+| TC-112 | Different seeds (1..40) → pairwise different match lists | the seed must really drive the draw |
+| TC-113 | `generate(34)`: 18 teams, 306 matches, 9 per round, every ordered pair exactly once, no team twice in a round, round r+17 = round r with home/away swapped | FR-03, SLS Art. 3, generator.md "Schedule" |
+| TC-114 | `generate(k)` = first `9k` matches of `generate(34)` (same seed); its deductions are a subset of the full season's | generator.md "mid-season table = first k rounds" |
+| TC-115 | BVA invalid round count: 0, 35, −1, 36, `Integer.MIN/MAX` → `IllegalArgumentException` | valid range 1..34 |
+| TC-116 | BVA valid round count: 1, 2, 33, 34 → `9·k` matches | valid range 1..34 |
+| TC-117 | Over 200 seasons: forfeit share of matches in (0.5 %, 1.5 %), deductions per club-season in (1 %, 3 %), share of seasons with ≥ 1 deduction in (15 %, 45 %), at least one forfeit, every deduction = 3 points (rare but present) | documented probabilities 1 % / 2 % / 3 points |
+| TC-118 | Poisson sampler: 200 000 draws, fixed seed — mean = λ ± 0.02, variance = λ ± (0.03λ + 0.02) for λ = 0.5, 1.4, 3.0; λ ≤ 0 rejected (TC-118b) | Poisson mean = variance = λ |
+| TC-119 | Home goal share over 60 full seasons in (53 %, 57 %) | H = 1.10 ⇒ ≈ 55 % (generator.md) |
+| TC-120 | `StrengthModel`: 18 clubs, unique, in the order of the club file | SLS Art. 3 |
+| TC-121 | Promoted average used for exactly the clubs without any window season (Amed SFK, Çorum FK) and for no other club; attack/defence equal the test-computed promoted average from the CSV (≈ 1.22 / 1.45 as documented) | generator.md "Strength" |
+| TC-122 | μ = Σ goals for / Σ played over all CSV rows, computed independently in the test (≈ 1.407) | generator.md |
+| TC-123 | For every club with window seasons: attack = ΣGF/Σplayed, defence = ΣGA/Σplayed (pooled, match-weighted), season count; unknown club rejected (123b); empty/invalid sources rejected (123c) | generator.md "Strength" |
+
+### Group B — scenario library (`ScenarioLibraryTest`)
+
+| TC | Property | Basis |
+|---|---|---|
+| TC-124 | `ids()` = S01..S12 in order | catalogue |
+| TC-125 | Every scenario loads, has 18 teams and `9·rounds` matches (catalogue), and passes calculator validation | library contract |
+| TC-126 | Every library scenario equals `new SeasonGenerator(seed).generate(rounds)` with the catalogue seed/rounds (documented deterministic build; also detects stale library files after a generator change) | generator.md "Scenario library" |
+| TC-127 | `pickRandomId(seed)`: deterministic, always a valid id, all 12 ids reachable over 2000 seeds | CLI `random` contract |
+| TC-128 | Unknown id (`S99`, `S00`, `S13`, empty, `s01`, `S1`, leading space, `null`) rejected by `load` and `entry` | negative |
+
+### Group C — invariants over all 12 library scenarios + 50 random seasons (`PropertyBasedStandingsTest`)
+
+| TC | Property | Basis |
+|---|---|---|
+| TC-100 | Conservation: Σ won = Σ lost; Σ drawn even; Σ GF = Σ GA (after forfeit adjustment); Σ played = 2 · matches | every match: one W + one L or two D; goals counted once each side |
+| TC-101 | Per row: played = W + D + L; GD = GF − GA; points = 3W + D − deducted; and every value equals the test-side oracle recomputed from the raw match list and deductions (FMT 23/4 applied in the test) | FR-04..FR-07, A-01, FMT 23/4 |
 | TC-102 | Positions are exactly 1..n in list order; points non-increasing down the table | FR-08, FR-13 |
-| TC-103 | Every unresolved row has an adjacent unresolved row with equal points; each unresolved block is in Turkish alphabetical order; a team with a unique points total is never unresolved | FR-12, D-02 |
-| TC-104 | MR shuffle: random permutation of team list and match list → identical sequence of (team, position, unresolved) | ranking must not depend on input order |
-| TC-105 | MR consistent renaming (bijection, e.g. reversed alphabetical mapping) → same positions for resolved teams; unresolved blocks contain the renamed same teams, re-sorted by the new names | names only matter for D-02 display |
-| TC-106 | MR mirroring: swap home/away and goals of **every** match, HOME↔AWAY forfeit → identical table | FR-09 II: away goals have no extra weight; no criterion depends on venue |
-| TC-107 | MR deduction: add `(T,d)` → T's points −d; all P/W/D/L/GF/GA unchanged; every team that was above T is still above T. (The relative order of *other* teams is deliberately **not** asserted: a new 3-team tie created by the deduction can legally reorder them — FMT 9/2-b is not monotonic.) | FR-07, A-02 |
-| TC-108 | Scenario TWO_TEAM_TIE: the two designated teams have equal points, adjacent positions; their order agrees with a test-side oracle that evaluates 9/2-a I–V from the raw match list | FR-09 |
-| TC-109 | Scenario THREE_TEAM_TIE: ≥ 3 designated teams with equal points on consecutive positions; order agrees with a test-side mini-table oracle (9/2-b II–VII, no rebuild) | FR-10, FR-11 |
-| TC-110 | Scenario FULLY_UNRESOLVED: all designated teams flagged unresolved, consecutive positions, Turkish alphabetical order | FR-12, D-02 |
-| TC-111 | Determinism and validity: same seed → identical season and table; every generated season passes validation (no V-xx exception, ≤ 2 matches per pair, one per direction) | generator contract, FR-03 |
+| TC-103 | Unresolved teams come in groups (consecutive rows, equal points) of ≥ 2; a team whose points total is unique is never unresolved | FR-12 |
+
+### Group D — metamorphic relations (`MetamorphicStandingsTest`; 12 library scenarios + random seeds 1..20, TC-129 on full seasons only)
+
+| TC | Relation | Basis |
+|---|---|---|
+| TC-104 | Shuffle: random permutation of team list, match list and deduction list → identical sequence of (position, team, unresolved) | ranking must not depend on input order |
+| TC-105 | Consistent renaming: every team gets prefix `"X "` → same points/flags per position; resolved teams in the same positions; unresolved groups contain the renamed same teams (compared as sets) | names only matter for D-02 display |
+| TC-106 | Mirroring: swap home/away and goals of every match, HOME↔AWAY forfeit → identical sequence | FR-09 II: no criterion depends on venue |
+| TC-107 | Add a deduction `(T,d)`, d = 1..5 → T's points drop by exactly d; all other points and all P/W/D/L/GF/GA unchanged. The relative order of *other* teams is deliberately **not** asserted (a new 3-team tie created by the deduction can legally reorder them — FMT 9/2-b is not monotonic) | FR-07, A-02 |
+| TC-129 | Remove all 9 matches of one round from a full season → every team's played count drops by exactly 1 | each team plays once per round |
+
+### Group E — catalogue flags vs calculator (`CatalogueFlagsTest`)
+
+| TC | Property | Basis |
+|---|---|---|
+| TC-108 | Every scenario flagged LIKELY_UNRESOLVED (S04, S06, S08, S11): the calculator marks ≥ 2 rows unresolved (the independent classifier is conservative: every group it flags the calculator must flag too) | generator.md "Independent classifier", FR-12 |
+| TC-109 | Every scenario flagged NO_TIE (S01): no two clubs share points, none unresolved | FR-08, FR-12 |
+| TC-110 | For all 12 scenarios the flags TIE_2 / TIE_3PLUS / FORFEIT / DEDUCTION / NO_TIE equal what the calculator's points groups and the data show (two-way); match count = 9·rounds | catalogue correctness |
+
+### Group F — CLI scenarios (`cli/MainScenarioTest`)
+
+| TC | Input | Expected | Basis |
+|---|---|---|---|
+| TC-130 | `--scenario S01` (130b: `S04`) | exit 0, stderr empty, header line `Scenario S01…`, 18 table rows (S04: also the unresolved legend) | FR-15, D-03 |
+| TC-131 | `--scenario random 42` twice | exit 0, identical output; header names `pickRandomId(42)` and "picked with seed 42"; 18 rows | seeded determinism |
+| TC-132 | `--scenario S99` (also `s01`, `S00`) | exit 1, message naming the id on stderr, no table | negative |
+| TC-133 | `--scenario S01 5` | exit 2, usage on stderr, no table (seed only with `random`) | negative, usage |
+| TC-134 | `--scenario`; `--scenario random abc`; `--scenario random 42 7` | exit 2, usage message, no table | negative, BVA on argument count |
 
 ---
 
@@ -422,9 +472,9 @@ Columns: **Tech** = EP (equivalence partition), BVA, DT (decision table rule), N
 | TC-098 | NEG | V-08, V-03 | (a) missing file; (b) matches line `A;B;x;0` on line 2; (c) matches reference unregistered `Z` | one-line error on stderr naming file (+ line 2 for b, `Z` for c); non-zero exit; no table; no stack trace (assumption Q11) | errors reach the user cleanly | — |
 | TC-099 | EP | FR-14, FR-15 | teams `İstanbul Başakşehir`, `Şanlıurfaspor`, match `İstanbul Başakşehir;Şanlıurfaspor;1;1` | output (captured as UTF-8) contains both names intact, both marked unresolved, İstanbul Başakşehir first | end-to-end Turkish characters + D-02 | — |
 
-### 7.10 Property-based / metamorphic — `generator/PropertyBasedStandingsTest`
+### 7.10 Generator, library, property-based / metamorphic — `generator/*`, `cli/MainScenarioTest`
 
-TC-100..TC-111 as specified in §6 (technique PBT/MR; seeds 1..100; each generated scenario type at least 10 seeds).
+TC-100..TC-134 as specified in §6 (technique PBT/MR, generator correctness, BVA, negative). Data: 12 library scenarios + random seeds 1..50 (invariants), 12 + seeds 1..20 (metamorphic).
 
 ---
 
@@ -443,7 +493,13 @@ All under `src/test/java/edu/svv/standings/`. Each test method gets `@DisplayNam
 | `io/CsvLoaderTest` | TC-080..TC-090 | 11 | `@TempDir`, write files with `StandardCharsets.UTF_8` |
 | `cli/TableFormatterTest` | TC-091..TC-094 | 4 | |
 | `cli/MainTest` | TC-095..TC-099 | 5 | capture `System.out`/`System.err` (UTF-8 PrintStream); exit status via the entry point Main offers (assumption Q11) |
-| `generator/PropertyBasedStandingsTest` | TC-100..TC-111 | 12 | `@MethodSource` seeds; test-side oracle helpers for TC-108/109 |
+| `generator/PropertyBasedStandingsTest` | TC-100..TC-103 | 4 | `@MethodSource` over 12 library + 50 random seasons; test-side oracle (`GeneratorTestSupport`) |
+| `generator/MetamorphicStandingsTest` | TC-104..TC-107, TC-129 | 5 | shuffle, rename, mirror, deduction, remove-round |
+| `generator/CatalogueFlagsTest` | TC-108..TC-110 | 3 | catalogue flags vs calculator |
+| `generator/SeasonGeneratorTest` | TC-111..TC-119 | 9 | determinism, schedule, prefix, BVA, rates, Poisson, home share |
+| `generator/StrengthModelTest` | TC-120..TC-123 | 4 | expected values recomputed from the resource CSV |
+| `generator/ScenarioLibraryTest` | TC-124..TC-128 | 5 | ids, load, reproducibility, `pickRandomId`, unknown id |
+| `cli/MainScenarioTest` | TC-130..TC-134 | 5 | `--scenario` exit codes and output |
 | **Total** | | **95** | |
 
 Shared fixture suggestion: a tiny test helper `Leagues` (test scope) with `team(String)`, `m("A","B",2,1)`, `m("A","B",2,1,Forfeit.HOME)` to keep fixtures readable and identical to this plan.
@@ -456,8 +512,8 @@ Shared fixture suggestion: a tiny test helper `Leagues` (test scope) with `team(
 | Boundary value analysis | 008, 014, 020, 021, 030, 031, 047, 074, 094 | 9 |
 | Decision table | 022, 024, 032, 033, 034, 050..059 (10), 065..073 (9), 077 | 25 |
 | Negative | 002, 005, 006, 007, 009, 035, 040, 041, 042, 044, 046, 048, 084, 085, 086, 088, 090, 097, 098 | 19 |
-| Property-based / metamorphic | 100..111 | 12 |
-| **Total** | | **95** |
+| Property-based / metamorphic / generator | 100..134 | 35 |
+| **Total** | | **118** |
 
 (Many TCs carry a secondary technique, shown in the Tech column; e.g. TC-050/051/054/055 are also BVA rows, TC-005/048/084 are also BVA.)
 
@@ -469,25 +525,25 @@ Shared fixture suggestion: a tiny test helper `Leagues` (test scope) with `team(
 |---|---|
 | FR-01 | TC-001, TC-002, TC-016, TC-042, TC-043 |
 | FR-02 | TC-004, TC-005, TC-044 |
-| FR-03 | TC-046, TC-047, TC-048, TC-111 |
+| FR-03 | TC-046, TC-047, TC-048, TC-111, TC-113 |
 | FR-04 | TC-010, TC-011, TC-012, TC-101 |
-| FR-05 | TC-010, TC-012, TC-013, TC-100, TC-101 |
-| FR-06 | TC-020, TC-021, TC-022, TC-023, TC-024, TC-056, TC-058, TC-070, TC-077, TC-106 |
-| FR-07 | TC-030, TC-031, TC-032, TC-033, TC-034, TC-096, TC-107 |
-| FR-08 | TC-012, TC-014, TC-061, TC-102 |
-| FR-09 | TC-024, TC-050..TC-061, TC-074, TC-106, TC-108 |
-| FR-10 | TC-065..TC-077, TC-109 |
-| FR-11 | **TC-072, TC-073**, TC-070, TC-109 |
-| FR-12 | TC-011, TC-015, TC-031, TC-058, TC-059, TC-070, TC-071, TC-078, TC-103, TC-110 |
+| FR-05 | TC-010, TC-012, TC-013, TC-100, TC-101, TC-129 |
+| FR-06 | TC-020, TC-021, TC-022, TC-023, TC-024, TC-056, TC-058, TC-070, TC-077, TC-101, TC-106 |
+| FR-07 | TC-030, TC-031, TC-032, TC-033, TC-034, TC-096, TC-101, TC-107 |
+| FR-08 | TC-012, TC-014, TC-061, TC-102, TC-109 |
+| FR-09 | TC-024, TC-050..TC-061, TC-074, TC-106 |
+| FR-10 | TC-065..TC-077 |
+| FR-11 | **TC-072, TC-073**, TC-070 |
+| FR-12 | TC-011, TC-015, TC-031, TC-058, TC-059, TC-070, TC-071, TC-078, TC-103, TC-108, TC-109 |
 | FR-13 | TC-010, TC-012, TC-091, TC-102 |
-| FR-14 | TC-080..TC-083, TC-087, TC-089, TC-095, TC-096, TC-099 |
-| FR-15 | TC-091..TC-095, TC-099 |
+| FR-14 | TC-080..TC-083, TC-087, TC-089, TC-095, TC-096, TC-099, TC-125 |
+| FR-15 | TC-091..TC-095, TC-099, TC-130..TC-131 |
 | V-01 | TC-002, TC-007, TC-009, TC-040, TC-041 |
 | V-02 | TC-002, TC-042 |
 | V-03 | TC-044, TC-045, TC-098 |
 | V-04 | TC-006 |
 | V-05 | TC-005, TC-088 |
-| V-06 | TC-046, TC-048 |
+| V-06 | TC-046, TC-048, TC-113 |
 | V-07 | TC-008, TC-035, TC-089 |
 | V-08 | TC-084, TC-085, TC-086, TC-088, TC-090, TC-098 |
 | A-01 | all GD assertions (TC-010, TC-012, TC-101) |
@@ -495,8 +551,8 @@ Shared fixture suggestion: a tiny test helper `Leagues` (test scope) with `team(
 | A-03 | TC-013, TC-015, TC-060, TC-075 |
 | A-04 | TC-013 |
 | D-01 | TC-003, TC-006, TC-042, TC-043, TC-045, TC-082 |
-| D-02 | TC-011, TC-015, TC-058, TC-059, TC-070, TC-071, TC-078, TC-079, TC-099, TC-103, TC-105, TC-110 |
-| D-03 | TC-095..TC-099 |
+| D-02 | TC-011, TC-015, TC-058, TC-059, TC-070, TC-071, TC-078, TC-079, TC-099, TC-105 |
+| D-03 | TC-095..TC-099, TC-130..TC-134 |
 
 Decision-table coverage: 4.1 R1–R7 + R2' → TC-050..TC-059; 4.2 M1–M9 → TC-065..TC-073; 4.3 F1–F6 → TC-011, TC-020..TC-022; 4.4 D1–D5 → TC-030..TC-035. Every rule has ≥ 1 case.
 
@@ -507,7 +563,7 @@ Decision-table coverage: 4.1 R1–R7 + R2' → TC-050..TC-059; 4.2 M1–M9 → T
 | # | Area | Why defects are likely here | Covered by |
 |---|---|---|---|
 | 1 | **FR-11 "no re-look at sub-ties"** | The intuitive (and UEFA-style) implementation recurses: when a sub-group stays level it rebuilds a smaller mini-table. FMT explicitly forbids this. Also easy: applying overall criteria too early. | TC-072, TC-073, TC-074 |
-| 2 | **Turkish alphabetical order (D-02)** | Default `String.compareTo` sorts by UTF-16 code point → Ç, İ, Ş, Ü land after Z. Needs a Turkish `Collator`. The suspicion is also noted in CLAUDE.md. | TC-078, TC-079, TC-099, TC-103 |
+| 2 | **Turkish alphabetical order (D-02)** | Default `String.compareTo` sorts by UTF-16 code point → Ç, İ, Ş, Ü land after Z. Needs a Turkish `Collator`. The suspicion is also noted in CLAUDE.md. | TC-078, TC-079, TC-099 |
 | 3 | Forfeit adjustment consistency (FR-06) | Adjustment may be applied in stats but not in h2h/mini, or the max(3,g) boundary written as `>`/`>=` wrongly, or the winning side confused (HOME means *home forfeited*). | TC-020..TC-024, TC-077 |
 | 4 | Tie-group detection & positions | Several tie groups, groups created by deductions, partial resolution (one team separated, two level), unresolved block in the middle of the table, numbering of consecutive positions. | TC-031, TC-061, TC-070, TC-033 |
 | 5 | 2→3 algorithm switch and A-03 | Different code paths; teams that never met → missing map entries / NullPointerException; incomplete mini-table. | TC-060, TC-073/074, TC-075, TC-013 |
@@ -516,7 +572,9 @@ Decision-table coverage: 4.1 R1–R7 + R2' → TC-050..TC-059; 4.2 M1–M9 → T
 | 8 | CSV robustness | CRLF `\r` sticking to the last field, physical vs logical line numbers, empty optional field, platform charset (macOS default UTF-8 hides a missing explicit charset; machine locale is tr_TR). | TC-080, TC-083, TC-084, TC-087 |
 | 9 | CLI | `System.exit` inside `main` makes testing hard; column width computed before negative values / long Turkish names; stdout encoding. | TC-092, TC-094, TC-097, TC-099 |
 | 10 | Order dependence | Ranking that depends on input order of teams/matches (stable sort used as a hidden tie-breaker instead of flagging unresolved). | TC-059, TC-104 |
-| 11 | Generator correctness | A "guaranteed" tie scenario might not be an exact tie, or might create duplicate fixtures; property tests would then be meaningless. | TC-108..TC-111 |
+| 11 | Generator correctness | The generator and the strength model are first-version code too: a schedule with duplicate fixtures or a team playing twice per round, a seed that does not drive the draw, `generate(k)` not being a prefix of the full season, wrong promoted-average / μ computation, a broken Poisson sampler or wrong forfeit/deduction rates would make every property test meaningless or the mid-season tables unrealistic. Library files may also go stale after a generator change. | TC-111..TC-128 |
+| 12 | Catalogue / classifier mismatch | The library's flags come from an independent classifier; a wrong flag (or a calculator that misses an unresolved group) would hide in "realistic" data. | TC-108..TC-110 |
+| 13 | CLI scenario option | Exit codes (0 / 1 / 2) and usage handling of `--scenario`, seed only with `random`, non-numeric seed, unknown id. | TC-130..TC-134 |
 
 ---
 
