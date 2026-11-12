@@ -128,7 +128,7 @@ public final class SeasonGenerator {
     /**
      * Daire yöntemiyle çift devreli fikstür. İlk takım sabit kalır, diğerleri her hafta bir adım döner.
      * İlk devrede her çift bir kez karşılaşır; ikinci devre aynı haftalar ev/deplasman değiştirilmiş hâlidir.
-     * Ev sahibi seçimi basit bir parite kuralıyla yapılır (dengeli ama "break" optimizasyonu yok; varsayım: yeterli).
+     * Ev sahibi seçimi konum paritesiyle yapılır: ilk devrede her takımın iç saha sayısı dengelidir (DEF-005); "break" optimizasyonu yok.
      *
      * @param order takımlar (çift sayıda); sıra fikstürü belirler
      * @return 2·(n−1) hafta, her hafta n/2 maç
@@ -145,8 +145,10 @@ public final class SeasonGenerator {
             for (int i = 0; i < n / 2; i++) {
                 Team a = ring.get(i);
                 Team b = ring.get(n - 1 - i);
-                // sabit takım haftadan haftaya ev/deplasman değiştirir; diğer çiftlerde hafta + konum paritesi
-                boolean aHome = (i == 0) ? (r % 2 == 0) : ((r + i) % 2 == 0);
+                // sabit takım haftadan haftaya ev/deplasman değiştirir.
+                // DEF-005: eski kural (hafta + konum paritesi) dönen halkada bir takımı ilk devrede hep deplasmana
+                // bırakıyordu (0..16 iç saha). Konum paritesi tek başına kullanılınca her takım ⌊(n−1)/2⌋..⌈(n−1)/2⌉ iç saha oynar.
+                boolean aHome = (i == 0) ? (r % 2 == 0) : (i % 2 == 1);
                 round.add(aHome ? new Fixture(a, b) : new Fixture(b, a));
             }
             firstHalf.add(round);

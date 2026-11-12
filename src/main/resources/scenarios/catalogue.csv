@@ -1,13 +1,13 @@
 id;seed;rounds;flags;description
-S01;988;34;NO_TIE;full season, no points tie at all - 306 matches, 0 two-team tie(s), 0 3+-team tie(s), 0 forfeit(s), 0 deduction(s)
-S02;40;34;TIE_2;full season, only 2-team ties - 306 matches, 4 two-team tie(s), 0 3+-team tie(s), 0 forfeit(s), 0 deduction(s)
-S03;5;34;TIE_2,TIE_3PLUS,FORFEIT;full season with a 3+-team tie - 306 matches, 1 two-team tie(s), 1 3+-team tie(s) (largest 3), 4 forfeit(s), 0 deduction(s)
-S04;10463;34;TIE_2,TIE_3PLUS,FORFEIT,DEDUCTION,LIKELY_UNRESOLVED;full season containing everything - 306 matches, 2 two-team tie(s), 1 3+-team tie(s) (largest 3), 3 forfeit(s), 1 deduction(s), likely unresolved: 2 teams on 63 pts
-S05;8;34;TIE_2,FORFEIT,DEDUCTION;full season, forfeit + deduction, no 3+-team tie - 306 matches, 4 two-team tie(s), 0 3+-team tie(s), 1 forfeit(s), 1 deduction(s)
-S06;1;1;TIE_2,TIE_3PLUS,LIKELY_UNRESOLVED;round 1, likely fully unresolved group - 9 matches, 1 two-team tie(s), 2 3+-team tie(s) (largest 8), 0 forfeit(s), 0 deduction(s), likely unresolved: 2 teams on 1 pts
-S07;23;2;TIE_2,TIE_3PLUS,FORFEIT;round 2, early table with a forfeit - 18 matches, 1 two-team tie(s), 3 3+-team tie(s) (largest 6), 1 forfeit(s), 0 deduction(s)
-S08;869;3;TIE_2,TIE_3PLUS,DEDUCTION,LIKELY_UNRESOLVED;round 3, likely unresolved group and an early deduction - 27 matches, 4 two-team tie(s), 3 3+-team tie(s) (largest 3), 0 forfeit(s), 1 deduction(s), likely unresolved: 2 teams on 5 pts
-S09;3;10;TIE_2;first third, only 2-team ties - 90 matches, 5 two-team tie(s), 0 3+-team tie(s), 0 forfeit(s), 0 deduction(s)
-S10;12;17;TIE_2,TIE_3PLUS,FORFEIT,DEDUCTION;half season (end of first half), forfeit + deduction - 153 matches, 2 two-team tie(s), 1 3+-team tie(s) (largest 3), 3 forfeit(s), 2 deduction(s)
-S11;45;25;TIE_2,TIE_3PLUS,FORFEIT,LIKELY_UNRESOLVED;late mid-season, likely unresolved group - 225 matches, 2 two-team tie(s), 1 3+-team tie(s) (largest 3), 2 forfeit(s), 0 deduction(s), likely unresolved: 2 teams on 32 pts
-S12;7;30;TIE_2,TIE_3PLUS,FORFEIT;run-in, several ties and a forfeit - 270 matches, 3 two-team tie(s), 1 3+-team tie(s) (largest 3), 2 forfeit(s), 0 deduction(s)
+S01;2470;34;NO_TIE;full season, no points tie at all - 306 matches, 0 two-team tie(s), 0 3+-team tie(s), 0 forfeit(s), 0 deduction(s)
+S02;7;34;TIE_2;full season, only 2-team ties - 306 matches, 2 two-team tie(s), 0 3+-team tie(s), 0 forfeit(s), 0 deduction(s)
+S03;6;34;TIE_2,TIE_3PLUS,FORFEIT;full season with a 3+-team tie - 306 matches, 2 two-team tie(s), 1 3+-team tie(s) (largest 3), 4 forfeit(s), 0 deduction(s)
+S04;12199;34;TIE_2,TIE_3PLUS,FORFEIT,DEDUCTION,LIKELY_UNRESOLVED;full season containing everything - 306 matches, 2 two-team tie(s), 1 3+-team tie(s) (largest 3), 2 forfeit(s), 1 deduction(s), likely unresolved: 2 teams on 31 pts
+S05;4;34;NO_TIE,FORFEIT,DEDUCTION;full season, forfeit + deduction, no 3+-team tie - 306 matches, 0 two-team tie(s), 0 3+-team tie(s), 3 forfeit(s), 1 deduction(s)
+S06;9;1;TIE_2,TIE_3PLUS,LIKELY_UNRESOLVED;round 1, likely fully unresolved group - 9 matches, 1 two-team tie(s), 2 3+-team tie(s) (largest 8), 0 forfeit(s), 0 deduction(s), likely unresolved: 2 teams on 1 pts
+S07;15;2;TIE_2,TIE_3PLUS,FORFEIT;round 2, early table with a forfeit - 18 matches, 1 two-team tie(s), 3 3+-team tie(s) (largest 6), 2 forfeit(s), 0 deduction(s)
+S08;89;3;TIE_2,TIE_3PLUS,DEDUCTION,LIKELY_UNRESOLVED;round 3, likely unresolved group and an early deduction - 27 matches, 2 two-team tie(s), 2 3+-team tie(s) (largest 5), 0 forfeit(s), 1 deduction(s), likely unresolved: 2 teams on 2 pts
+S09;1;10;TIE_2;first third, only 2-team ties - 90 matches, 5 two-team tie(s), 0 3+-team tie(s), 0 forfeit(s), 0 deduction(s)
+S10;23;17;TIE_2,TIE_3PLUS,FORFEIT,DEDUCTION;half season (end of first half), forfeit + deduction - 153 matches, 4 two-team tie(s), 1 3+-team tie(s) (largest 3), 3 forfeit(s), 1 deduction(s)
+S11;144;26;TIE_2,TIE_3PLUS,FORFEIT,LIKELY_UNRESOLVED;late mid-season, likely unresolved group - 234 matches, 2 two-team tie(s), 1 3+-team tie(s) (largest 3), 3 forfeit(s), 0 deduction(s), likely unresolved: 2 teams on 27 pts
+S12;2;30;TIE_2,TIE_3PLUS,FORFEIT;run-in, several ties and a forfeit - 270 matches, 2 two-team tie(s), 1 3+-team tie(s) (largest 3), 2 forfeit(s), 0 deduction(s)
