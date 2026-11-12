@@ -54,6 +54,20 @@
                 <version>3.5.2</version>
             </plugin>
 
+            <!-- java -jar için manifest'e ana sınıf yazılır -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.4.2</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>edu.svv.standings.cli.Main</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
+
             <!-- Coverage: testlerden önce ajan eklenir, verify aşamasında HTML rapor üretilir (target/site/jacoco) -->
             <plugin>
                 <groupId>org.jacoco</groupId>
