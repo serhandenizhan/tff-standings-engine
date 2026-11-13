@@ -72,7 +72,7 @@ Zincir: **2026–27 Süper Lig Müsabakaları Statüsü** (Md. 3: 18 takım, çi
 6. ✅ Test planı Actual sütunu dolduruldu, README dokümantasyon tablosu. (Uzun İngilizce/Türkçe rapor taslakları 2026-11-13'te kullanıcı isteğiyle silindi; git geçmişinde duruyor.)
 9. ✅ Bağımsız kod incelemesi (4 ajan): DEF-003 `|` içeren adlar (b35e03b), DEF-004 int taşması (838b916, yeni V-09), DEF-005 fikstür dengesi (5af729c, senaryolar yeniden üretildi). Kırmızı commit bf4be97 (run-04, 663/8 fail) → run-05 664/664. Branch %70.8 (araçlar hariç %97.4). requirements v1.2.
 8. ✅ Kısa Türkçe rapor taslağı `docs/report-short.tr.md` (~1.350 kelime, 6 tablo, 3 kod bloğu ≈ 5 sayfa; İngilizcesi ≈ 5–6 sayfa olur). İngilizceyi öğrenci yazacak.
-7. ✅ Kontrol artifact'i (senaryo verisi DEF-005 öncesine ait, yeniden yayımlanmadı): https://claude.ai/artifact/LaSP9N711DAh45vbVppmzV (ödev maddeleri, tahmini puan 86/100, savunma kartları, S01–S12 tabloları ve maçları)
+7. ✅ Kontrol artifact'i v2 (2026-11-13, yeni S01–S12 verisi, 5 defect, 664 test, tahmini puan 83/100; araştırma ve rapor maddeleri öğrenciye kalan olarak işaretli): https://claude.ai/artifact/LaSP9N711DAh45vbVppmzV
 
 ## Öğrenciye kalanlar (teslim öncesi)
 - Raporu gerekirse kısalt (hedef 5–7k kelime idi), Word/PDF'e çevir.
