@@ -130,7 +130,14 @@ Testler ve sonradan yapılan kod incelemesi toplam beş gerçek hata buldu; sür
 
 [Kendi değerlendirmen: Java ve JUnit öğrenirken nelerde zorlandın, 3–4 cümle.]
 
-**AI kullanımı:** [Kendi sözlerinle yaz: Claude Code'u nerede kullandın, hangi kararları sen verdin, neleri kontrol edip değiştirdin. Ayrıntılı kayıt `docs/ai-usage-log.md` içinde.]
+**AI kullanımı:** Bu projede bir yapay zekâ aracından (Claude Code) destek aldım, ama işi tamamen ona bırakmadım. Kod, test ve doküman taslaklarının büyük kısmını araç üretti. Yön ve kararlar bendeydi:
+- Konuyu seçtim; Süper Lig statüsünü kendim bulup kural kaynağını belirledim.
+- Gereksinimlerin dayandığı kural bilgisini verdim: ikili averajın iki maç üzerinden hesaplanması, hükmen 3-0, silinen puanın sıralamaya etkisi.
+- Gereksinimleri ve tasarım kararlarını (takım adı karşılaştırması, çözülemeyen eşitliğin gösterimi, CSV girişi) onayladım.
+- Sezon üretecinin koşullarını ben belirledim: kurgulanmış eşitlik olmayacak, takım gücü son 10 sezonun gerçek verisinden gelecek.
+- Bulunan hataların kayda geçirilmesine ve düzeltilmesine karar verdim, çıktıları kontrol ettim.
+
+Hangi adımda aracın ne yaptığı ve benim neye karar verdiğim `docs/ai-usage-log.md` dosyasında tarih tarih kayıtlı. Raporun İngilizce metnini kendi cümlelerimle yazdım.
 
 ## Kaynaklar
 
